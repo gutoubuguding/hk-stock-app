@@ -1,0 +1,36 @@
+server:
+  port: 8080
+  address: 0.0.0.0
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hk_stock
+    username: postgres
+    password: your_database_password
+    driver-class-name: org.postgresql.Driver
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+ai-service:
+  url: http://localhost:8082
+
+futu:
+  opend-host: 127.0.0.1
+  opend-port: 11111
+
+app:
+  python:
+    executable: python
+  scripts:
+    # 后端从 backend/ 目录启动时，.. 指向项目根目录 hk-stock-app/
+    root: ..
+  schedule:
+    ipo-update-cron: "0 0 8,20 * * ?"

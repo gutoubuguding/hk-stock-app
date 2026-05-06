@@ -1,0 +1,68 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.local
+application-local.yml
+application-prod.yml
+
+# Logs / runtime output
+*.log
+*.err
+logs/
+
+# Java / Maven
+backend/target/
+backend/BOOT-INF/
+*.class
+
+# Node / Vue
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+ai-service/.venv/
+
+# Generated market data / scrape artifacts at project root
+/*.csv
+/*.html
+/*.xlsx
+/*.xls
+
+# Development one-off scripts at project root.
+# Keep only the scripts called by ScheduledTasks; the rest are local debugging/migration helpers.
+/*.py
+!/sync_daily_kline.py
+!/sync_ipo_futu.py
+!/sync_market_overview.py
+!/sync_calendar_aastocks.py
+
+# Local batch launchers often contain machine-specific paths
+/*.bat
+
+# Local screenshots / temporary verification artifacts
+screenshot*.png
+*_screenshot.png
+
+# OpenClaw / local run scratch
+.claude/
+.codex/

@@ -1,0 +1,40 @@
+server:
+  port: ${SERVER_PORT:8080}
+  address: ${SERVER_ADDRESS:0.0.0.0}
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/hk_stock}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+
+# MyBatis-Plus
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: ${MYBATIS_LOG_IMPL:org.apache.ibatis.logging.stdout.StdOutImpl}
+
+# AI 微服务地址
+ai-service:
+  url: ${AI_SERVICE_URL:http://localhost:8082}
+
+# Futu OpenD 配置
+futu:
+  opend-host: ${FUTU_OPEND_HOST:127.0.0.1}
+  opend-port: ${FUTU_OPEND_PORT:11111}
+
+# 定时任务配置
+app:
+  # Python 同步脚本配置：项目目录移动时，改环境变量 APP_SCRIPT_ROOT 即可。
+  python:
+    executable: ${PYTHON_EXECUTABLE:python}
+  scripts:
+    root: ${APP_SCRIPT_ROOT:..}
+  schedule:
+    ipo-update-cron: ${IPO_UPDATE_CRON:0 0 8,20 * * ?}  # 每天8点和20点更新新股数据
