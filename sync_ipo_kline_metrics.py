@@ -10,7 +10,35 @@ import subprocess
 from sync_daily_kline import DB_CONFIG, sync_daily_kline_with_retry
 
 
+def sync_ipo_detail_before_metrics():
+    """先补 IPO 详情，尤其是发行价；否则后面的涨跌幅计算会跳过这些股票。"""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    detail_script = os.path.join(script_dir, 'sync_ipo_detail_aastocks.py')
+    if not os.path.exists(detail_script):
+        print('未找到 sync_ipo_detail_aastocks.py，跳过 IPO 详情补全')
+        return
+
+    print('开始补全 IPO 发行价/详情...')
+    result = subprocess.run(
+        [sys.executable, detail_script],
+        cwd=script_dir,
+        text=True,
+        capture_output=True,
+        encoding='utf-8',
+        errors='replace',
+        timeout=900,
+    )
+    if result.stdout:
+        print(result.stdout)
+    if result.stderr:
+        print(result.stderr, file=sys.stderr)
+    if result.returncode != 0:
+        print(f'IPO详情补全脚本退出码: {result.returncode}，继续尝试已有数据的K线/指标同步')
+
+
 def main():
+    sync_ipo_detail_before_metrics()
+
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
     cur.execute("""

@@ -26,7 +26,7 @@ def main():
 
     cur.execute("""
         SELECT stock_code, stock_name, issue_price, listing_date,
-               first_day_change, seven_day_change, thirty_day_change
+               first_day_change, seven_day_change, thirty_day_change, current_change
         FROM stock_ipo
         WHERE listing_date IS NOT NULL
           AND issue_price IS NOT NULL
@@ -40,7 +40,7 @@ def main():
     filled_1d = filled_7d = filled_30d = 0
     waiting_7d = waiting_30d = 0
 
-    for code, name, issue_price, listing_date, old_1d, old_7d, old_30d in ipos:
+    for code, name, issue_price, listing_date, old_1d, old_7d, old_30d, old_current in ipos:
         cur.execute("""
             SELECT trade_date, close_price
             FROM stock_kline
@@ -58,6 +58,8 @@ def main():
         new_1d = old_1d
         new_7d = old_7d
         new_30d = old_30d
+        new_current = old_current
+        latest_close = None
 
         if old_1d is None and len(rows) >= 1:
             new_1d = pct(rows[0][1], issue_price)
@@ -81,17 +83,35 @@ def main():
             else:
                 waiting_30d += 1
 
-        if new_1d != old_1d or new_7d != old_7d or new_30d != old_30d:
+        # 现价涨跌幅每天都要跟随最新 K 线重算，不能只在为空时补一次。
+        cur.execute("""
+            SELECT close_price
+            FROM stock_kline
+            WHERE stock_code = %s
+              AND period_type = 'D'
+              AND trade_date >= %s
+              AND close_price IS NOT NULL
+            ORDER BY trade_date DESC
+            LIMIT 1
+        """, (code, listing_date))
+        latest = cur.fetchone()
+        if latest:
+            latest_close = latest[0]
+            new_current = pct(latest_close, issue_price)
+
+        if new_1d != old_1d or new_7d != old_7d or new_30d != old_30d or new_current != old_current:
             cur.execute("""
                 UPDATE stock_ipo
                 SET first_day_change = %s,
                     seven_day_change = %s,
                     thirty_day_change = %s,
+                    current_price = %s,
+                    current_change = %s,
                     updated_at = NOW()
                 WHERE stock_code = %s
-            """, (new_1d, new_7d, new_30d, code))
+            """, (new_1d, new_7d, new_30d, latest_close, new_current, code))
             updated += 1
-            print(f"{code} {name}: 首日={new_1d}, 7日={new_7d}, 30日={new_30d} (K线{len(rows)}条)")
+            print(f"{code} {name}: 首日={new_1d}, 7日={new_7d}, 30日={new_30d}, 现价涨跌={new_current} (K线{len(rows)}条)")
 
     conn.commit()
     cur.close()
