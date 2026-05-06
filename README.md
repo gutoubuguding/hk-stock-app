@@ -169,29 +169,6 @@ AI 微服务健康检查：
 curl http://localhost:8082/health
 ```
 
-## GitHub 上传前注意事项
-
-提交前确认这些内容不要进入仓库：
-
-- 真实数据库密码
-- 真实 AI API Key
-- `.env` / `.env.local`
-- `frontend/node_modules/`
-- `frontend/dist/`
-- `backend/target/`
-- `*.log` / `*.err`
-- `__pycache__/`
-- 本地截图、临时 CSV/HTML 爬虫产物
-
-本项目已经提供：
-
-- `.gitignore`
-- `.env.example`
-- `backend/src/main/resources/application.example.yml`
-- 使用环境变量的 `application.yml`
-
-如果准备公开仓库，建议先执行一次敏感信息扫描，再提交。
-
 ## 重要代码入口
 
 - 新股页面：`frontend/src/views/IPO.vue`
