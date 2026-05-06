@@ -62,12 +62,71 @@ hk-stock-app/
 │           ├── scraper.py                 # 数据/新闻抓取接口
 │           └── config.py                  # AI 配置接口
 │
+├── docker/               # Docker 初始化脚本
+├── docker-compose.yml    # PostgreSQL + 后端 + AI 服务 + 前端一键启动
+├── requirements-sync.txt # 同步脚本在 Docker 内需要的 Python 依赖
 ├── scripts / root *.py   # 同步、爬虫、修复、测试脚本（开发期工具）
 ├── .env.example          # 环境变量示例，不要填写真实密钥后提交
 ├── .gitignore            # GitHub 上传忽略规则
 ├── requirements.md       # 原始需求文档
 └── README.md
 ```
+
+## Docker Compose 一键启动
+
+项目已提供 Docker Compose 编排，可一次启动 PostgreSQL、Spring Boot 后端、FastAPI AI 服务和 Vue 前端。
+
+### 1. 准备环境变量
+
+```bash
+copy .env.example .env
+```
+
+至少修改 `.env` 里的数据库密码：
+
+```env
+POSTGRES_PASSWORD=your_database_password
+```
+
+如果需要在 Docker 容器里连接宿主机的 Futu OpenD，默认会使用：
+
+```env
+FUTU_OPEND_HOST=host.docker.internal
+FUTU_OPEND_PORT=11111
+```
+
+### 2. 一键启动
+
+```bash
+docker compose up -d --build
+```
+
+启动后访问：
+
+```text
+前端：http://localhost:3000
+后端：http://localhost:8080
+AI 服务：http://localhost:8082
+数据库：localhost:5432 / hk_stock
+```
+
+常用命令：
+
+```bash
+# 查看容器状态
+docker compose ps
+
+# 查看日志
+docker compose logs -f
+
+# 停止服务
+docker compose down
+
+# 停止并删除数据库数据卷（会清空数据）
+docker compose down -v
+```
+
+> 首次启动会自动执行 `docker/postgres/01_schema.sql` 初始化表结构。已有数据卷不会重复初始化；如果改了初始化 SQL 并想重建空库，需要先执行 `docker compose down -v`。
 
 ## 本地启动
 

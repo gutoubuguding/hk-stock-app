@@ -1,0 +1,32 @@
+.git
+.gitignore
+.dockerignore
+.env
+.env.*
+!.env.example
+
+# logs / runtime
+*.log
+*.err
+logs/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# frontend
+frontend/node_modules/
+frontend/dist/
+
+# backend
+backend/target/
+backend/BOOT-INF/
+
+# local scratch / data artifacts
+*.csv
+*.html
+*.xlsx
+*.xls
+screenshot*.png
+*_screenshot.png
+.claude/
+.codex/

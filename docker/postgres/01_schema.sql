@@ -1,9 +1,8 @@
--- 港股分析应用 数据库初始化脚本
--- 数据库: PostgreSQL
+﻿-- 娓偂鍒嗘瀽搴旂敤 鏁版嵁搴撳垵濮嬪寲鑴氭湰
+-- 鏁版嵁搴? PostgreSQL
 
--- 请先创建数据库 hk_stock，再在该数据库内执行本脚本。
-
--- 股票基本信息
+-- 璇峰厛鍒涘缓鏁版嵁搴?hk_stock锛屽啀鍦ㄨ鏁版嵁搴撳唴鎵ц鏈剼鏈€?
+-- 鑲＄エ鍩烘湰淇℃伅
 CREATE TABLE stock_info (
     id BIGSERIAL PRIMARY KEY,
     stock_code VARCHAR(20) NOT NULL UNIQUE,
@@ -18,11 +17,10 @@ CREATE INDEX idx_stock_info_code ON stock_info(stock_code);
 CREATE INDEX idx_stock_info_name ON stock_info(stock_name);
 CREATE INDEX idx_stock_info_sector ON stock_info(sector);
 
--- K线数据
-CREATE TABLE stock_kline (
+-- K绾挎暟鎹?CREATE TABLE stock_kline (
     id BIGSERIAL PRIMARY KEY,
     stock_code VARCHAR(20) NOT NULL,
-    period_type VARCHAR(5) NOT NULL,  -- D=日K, W=周K, M=月K, Y=年K
+    period_type VARCHAR(5) NOT NULL,  -- D=鏃, W=鍛↘, M=鏈圞, Y=骞碖
     trade_date DATE NOT NULL,
     open_price DECIMAL(12, 4),
     close_price DECIMAL(12, 4),
@@ -37,7 +35,7 @@ CREATE TABLE stock_kline (
 CREATE INDEX idx_kline_code_date ON stock_kline(stock_code, trade_date);
 CREATE INDEX idx_kline_period ON stock_kline(period_type);
 
--- 新股IPO信息
+-- 鏂拌偂IPO淇℃伅
 CREATE TABLE stock_ipo (
     id BIGSERIAL PRIMARY KEY,
     stock_code VARCHAR(20) NOT NULL,
@@ -79,7 +77,7 @@ CREATE INDEX idx_ipo_code ON stock_ipo(stock_code);
 CREATE INDEX idx_ipo_listing_date ON stock_ipo(listing_date);
 CREATE INDEX idx_ipo_sector ON stock_ipo(sector);
 
--- 新闻信息
+-- 鏂伴椈淇℃伅
 CREATE TABLE news (
     id BIGSERIAL PRIMARY KEY,
     stock_code VARCHAR(20) NOT NULL,
@@ -87,13 +85,12 @@ CREATE TABLE news (
     source VARCHAR(100),
     url TEXT,
     publish_time TIMESTAMP,
-    ai_sentiment VARCHAR(20),  -- 利好/利空/中性
-    ai_summary TEXT,
+    ai_sentiment VARCHAR(20),  -- 鍒╁ソ/鍒╃┖/涓€?    ai_summary TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_news_code_time ON news(stock_code, publish_time);
 
--- 自选股
+-- 鑷€夎偂
 CREATE TABLE watchlist (
     id BIGSERIAL PRIMARY KEY,
     stock_code VARCHAR(20) NOT NULL,
@@ -103,7 +100,7 @@ CREATE TABLE watchlist (
     UNIQUE(stock_code)
 );
 
--- 价格预警
+-- 浠锋牸棰勮
 CREATE TABLE price_alert (
     id BIGSERIAL PRIMARY KEY,
     stock_code VARCHAR(20) NOT NULL,
@@ -117,8 +114,7 @@ CREATE TABLE price_alert (
 CREATE INDEX idx_alert_code ON price_alert(stock_code);
 CREATE INDEX idx_alert_triggered ON price_alert(triggered);
 
--- 估值指标
-CREATE TABLE stock_valuation (
+-- 浼板€兼寚鏍?CREATE TABLE stock_valuation (
     id BIGSERIAL PRIMARY KEY,
     stock_code VARCHAR(20) NOT NULL,
     pe DECIMAL(12, 2),
@@ -131,7 +127,7 @@ CREATE TABLE stock_valuation (
 );
 CREATE INDEX idx_valuation_code ON stock_valuation(stock_code);
 
--- 财报/分红日历
+-- 璐㈡姤/鍒嗙孩鏃ュ巻
 CREATE TABLE stock_calendar (
     id BIGSERIAL PRIMARY KEY,
     stock_code VARCHAR(20) NOT NULL,
@@ -149,7 +145,7 @@ CREATE INDEX idx_calendar_date ON stock_calendar(event_date);
 CREATE INDEX idx_calendar_type ON stock_calendar(event_type);
 CREATE UNIQUE INDEX uk_stock_calendar_event ON stock_calendar(stock_code, event_type, event_date);
 
--- 系统配置（AI模型/API配置等）
+-- 绯荤粺閰嶇疆锛圓I妯″瀷/API閰嶇疆绛夛級
 CREATE TABLE stock_config (
     id BIGSERIAL PRIMARY KEY,
     config_key VARCHAR(100) NOT NULL UNIQUE,

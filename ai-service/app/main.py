@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import analyze, scraper, config
 import subprocess
 import threading
+import os
 from datetime import datetime
 
 app = FastAPI(
@@ -33,6 +34,14 @@ app.include_router(config.router, prefix="/api/config", tags=["配置管理"])
 _kline_sync_status = {"running": False, "progress": "", "last_run": None}
 _ipo_sync_status = {"running": False, "progress": "", "last_run": None}
 
+# 同步脚本根目录。Docker 环境通过 APP_SCRIPT_ROOT=/app/scripts 指定；
+# 本地开发不设置时，默认回到项目根目录，避免写死个人机器路径。
+SCRIPT_ROOT = os.getenv(
+    "APP_SCRIPT_ROOT",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+)
+PYTHON_EXECUTABLE = os.getenv("PYTHON_EXECUTABLE", "python")
+
 
 def _run_kline_sync_script():
     """在后台线程中运行K线同步脚本"""
@@ -41,8 +50,8 @@ def _run_kline_sync_script():
         _kline_sync_status["running"] = True
         _kline_sync_status["progress"] = "开始同步..."
         result = subprocess.run(
-            ["python", "sync_daily_kline.py"],
-            cwd="/tmp/hk-stock" if False else "C:/Users/34596/.openclaw/workspace/hk-stock-app",
+            [PYTHON_EXECUTABLE, "sync_daily_kline.py"],
+            cwd=SCRIPT_ROOT,
             capture_output=True,
             text=True,
             timeout=3600  # 最多跑1小时
@@ -67,8 +76,8 @@ def _run_ipo_sync_script():
         _ipo_sync_status["running"] = True
         _ipo_sync_status["progress"] = "开始同步..."
         result = subprocess.run(
-            ["python", "sync_ipo_futu.py"],
-            cwd="C:/Users/34596/.openclaw/workspace/hk-stock-app",
+            [PYTHON_EXECUTABLE, "sync_ipo_futu.py"],
+            cwd=SCRIPT_ROOT,
             capture_output=True,
             text=True,
             timeout=60
