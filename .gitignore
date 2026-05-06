@@ -53,6 +53,8 @@ ai-service/.venv/
 /*.py
 !/sync_daily_kline.py
 !/sync_ipo_futu.py
+!/sync_ipo_kline_metrics.py
+!/update_ipo_metrics.py
 !/sync_market_overview.py
 !/sync_calendar_aastocks.py
 

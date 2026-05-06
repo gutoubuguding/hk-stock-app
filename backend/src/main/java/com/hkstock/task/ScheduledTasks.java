@@ -39,6 +39,7 @@ public class ScheduledTasks {
     // 这样以后项目从 .openclaw 移到桌面/服务器时，只改配置，不用重新编译 Java 代码。
     private static final String PYTHON_SCRIPT_KLINE = "sync_daily_kline.py";
     private static final String PYTHON_SCRIPT_IPO = "sync_ipo_futu.py";
+    private static final String PYTHON_SCRIPT_IPO_METRICS = "sync_ipo_kline_metrics.py";
     private static final String PYTHON_SCRIPT_MARKET_OVERVIEW = "sync_market_overview.py";
     private static final String PYTHON_SCRIPT_CALENDAR = "sync_calendar_aastocks.py";
 
@@ -75,6 +76,32 @@ public class ScheduledTasks {
         log.info("【IPO同步】晚市同步开始 (时间: {})", LocalDateTime.now().format(DF));
         runPythonScript(resolveScript(PYTHON_SCRIPT_IPO), "IPO晚市同步");
         log.info("【IPO同步】晚市同步触发完成");
+    }
+
+    /**
+     * ===== 近一年新股对比指标同步 =====
+     *
+     * “近一年新股对比 / 板块统计 / 破发率”页面依赖 stock_ipo 里的
+     * first_day_change、seven_day_change、thirty_day_change 等字段。
+     * 这些字段不是 IPO 日历接口直接给的，而是要先同步上市后的日 K，
+     * 再用发行价和第 1/7/30 个交易日收盘价计算出来。
+     *
+     * 所以每天收盘后单独跑一次 IPO K线和指标回填，避免只更新了新股日历，
+     * 但近一年对比表长期停留在旧数据。
+     */
+    @Scheduled(cron = "0 5 17 * * MON-FRI")
+    public void syncIpoComparisonMetricsAfterClose() {
+        log.info("【IPO指标同步】收盘后同步开始 (时间: {})", LocalDateTime.now().format(DF));
+        runPythonScript(resolveScript(PYTHON_SCRIPT_IPO_METRICS), "IPO近一年对比指标-收盘");
+    }
+
+    /**
+     * 晚间补偿同步：配合 20:00 的 IPO 日历更新，把当天新增/刚上市的新股指标也补齐。
+     */
+    @Scheduled(cron = "0 20 20 * * ?")
+    public void syncIpoComparisonMetricsEvening() {
+        log.info("【IPO指标同步】晚间补偿同步开始 (时间: {})", LocalDateTime.now().format(DF));
+        runPythonScript(resolveScript(PYTHON_SCRIPT_IPO_METRICS), "IPO近一年对比指标-晚间");
     }
 
     /**
