@@ -344,11 +344,13 @@ onMounted(async () => {
   await loadBreakRate()
 })
 
+const unwrapApiResponse = (res) => res.data?.data ?? res.data
+
 const loadUpcoming = async () => {
   loadingUpcoming.value = true
   try {
     const res = await axios.get('/api/ipo/upcoming')
-    upcomingList.value = res.data
+    upcomingList.value = unwrapApiResponse(res) || []
   } catch (e) { console.error(e) }
   loadingUpcoming.value = false
 }
@@ -359,7 +361,7 @@ const loadComparison = async () => {
     const res = await axios.get('/api/ipo/comparison', {
       params: { sortBy: sortBy.value, sortOrder: sortOrder.value }
     })
-    comparisonData.value = res.data.data || []
+    comparisonData.value = unwrapApiResponse(res)?.data || []
   } catch (e) { console.error(e) }
   loadingComparison.value = false
 }
@@ -367,14 +369,14 @@ const loadComparison = async () => {
 const loadSectorStats = async () => {
   try {
     const res = await axios.get('/api/ipo/sector-stats')
-    sectorStats.value = res.data
+    sectorStats.value = unwrapApiResponse(res)
   } catch (e) { console.error(e) }
 }
 
 const loadBreakRate = async () => {
   try {
     const res = await axios.get('/api/ipo/break-rate')
-    breakRateData.value = res.data
+    breakRateData.value = unwrapApiResponse(res)
   } catch (e) { console.error(e) }
 }
 
@@ -398,9 +400,10 @@ const analyzeIpo = async (row) => {
   ipoNewsList.value = []
   try {
     const res = await axios.get(`/api/ipo/ai-analysis/${row.stockCode}`)
-    ipoAnalysisResult.value = res.data
-    ipoNewsList.value = res.data.news || []
-    ipoAnalysis.value = res.data.analysis || '分析完成'
+    const data = unwrapApiResponse(res) || {}
+    ipoAnalysisResult.value = data
+    ipoNewsList.value = data.news || []
+    ipoAnalysis.value = data.analysis || '分析完成'
   } catch (e) {
     ipoAnalysis.value = '分析失败: ' + e.message
   }
@@ -423,7 +426,7 @@ const onSectorClick = async (row) => {
   sectorIpos.value = []
   try {
     const res = await axios.get('/api/ipo/sector', { params: { sector: row.sector } })
-    sectorIpos.value = res.data.ipos || []
+    sectorIpos.value = unwrapApiResponse(res)?.ipos || []
   } catch (e) {
     console.error('加载板块公司失败:', e)
   }

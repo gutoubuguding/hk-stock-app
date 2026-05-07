@@ -1,5 +1,6 @@
 package com.hkstock.controller;
 
+import com.hkstock.common.ApiResponse;
 import com.hkstock.entity.StockIpo;
 import com.hkstock.service.IpoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +31,8 @@ public class IpoController {
      * 获取即将上市新股列表
      */
     @GetMapping("/upcoming")
-    public List<StockIpo> getUpcomingIpo() {
-        return ipoService.getUpcomingIpo();
+    public ApiResponse<List<StockIpo>> getUpcomingIpo() {
+        return ApiResponse.success(ipoService.getUpcomingIpo());
     }
 
     /**
@@ -41,27 +42,27 @@ public class IpoController {
      * @param sortOrder asc 或 desc，默认 desc
      */
     @GetMapping("/comparison")
-    public Map<String, Object> getIpoComparison(
+    public ApiResponse<Map<String, Object>> getIpoComparison(
             @RequestParam(required = false) String sortBy,
             @RequestParam(defaultValue = "desc") String sortOrder
     ) {
-        return ipoService.getIpoComparison(sortBy, sortOrder);
+        return ApiResponse.success(ipoService.getIpoComparison(sortBy, sortOrder));
     }
 
     /**
      * 获取新股板块统计
      */
     @GetMapping("/sector-stats")
-    public Map<String, Object> getSectorStats() {
-        return ipoService.getSectorStats();
+    public ApiResponse<Map<String, Object>> getSectorStats() {
+        return ApiResponse.success(ipoService.getSectorStats());
     }
 
     /**
      * 获取破发率统计
      */
     @GetMapping("/break-rate")
-    public Map<String, Object> getBreakRate() {
-        return ipoService.getBreakRate();
+    public ApiResponse<Map<String, Object>> getBreakRate() {
+        return ApiResponse.success(ipoService.getBreakRate());
     }
 
     /**
@@ -71,24 +72,24 @@ public class IpoController {
      * 数据库查公司名 -> 读取当前 AI 配置 -> 调用 ai-service 的 /api/analyze/ipo。
      */
     @GetMapping("/ai-analysis/{stockCode}")
-    public Map<String, Object> getIpoAiAnalysis(@PathVariable String stockCode) {
-        return ipoService.getAiAnalysis(stockCode);
+    public ApiResponse<Map<String, Object>> getIpoAiAnalysis(@PathVariable String stockCode) {
+        return ApiResponse.success(ipoService.getAiAnalysis(stockCode));
     }
 
     /**
      * 手动触发新股数据更新
      */
     @PostMapping("/refresh")
-    public Map<String, String> refreshIpoData() {
+    public ApiResponse<Map<String, String>> refreshIpoData() {
         ipoService.refreshIpoData();
-        return Map.of("status", "success", "message", "新股数据更新已触发");
+        return ApiResponse.success(Map.of("status", "success", "message", "新股数据更新已触发"));
     }
 
     /**
      * 获取指定板块的所有新股列表
      */
     @GetMapping("/sector")
-    public Map<String, Object> getIposBySector(@RequestParam String sector) {
-        return ipoService.getIposBySector(sector);
+    public ApiResponse<Map<String, Object>> getIposBySector(@RequestParam String sector) {
+        return ApiResponse.success(ipoService.getIposBySector(sector));
     }
 }
