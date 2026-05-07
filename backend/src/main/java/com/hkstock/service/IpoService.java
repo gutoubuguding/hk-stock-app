@@ -3,12 +3,16 @@ package com.hkstock.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.hkstock.entity.StockIpo;
+import com.hkstock.exception.AiServiceException;
+import com.hkstock.exception.BusinessException;
+import com.hkstock.exception.DataSyncException;
 import com.hkstock.mapper.StockIpoMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
@@ -157,27 +161,33 @@ public class IpoService {
      * AI分析新股走势
      */
     public Map<String, Object> getAiAnalysis(String stockCode) {
+        if (stockCode == null || stockCode.trim().isEmpty()) {
+            throw new BusinessException("股票代码不能为空");
+        }
+
+        // 从数据库查询股票名称
+        StockIpo ipo = ipoMapper.selectOne(
+            new LambdaQueryWrapper<StockIpo>().eq(StockIpo::getStockCode, stockCode)
+        );
+        String stockName = ipo != null ? ipo.getStockName() : "";
+
+        // 从配置服务获取 API Key / Base URL / Model。
+        // 注意：业务层不要依赖 ConfigController，否则会让 Service 反向依赖接口层。
+        Map<String, Object> config = configService.getCurrent();
+        String apiKey = (String) config.getOrDefault("ai_api_key", "");
+        String baseUrl = (String) config.getOrDefault("ai_base_url", "");
+        String model = (String) config.getOrDefault("ai_model", "");
+
+        // 调用AI服务，传入完整参数
+        String url = aiServiceUrl + "/api/analyze/ipo?stock_code={code}&stock_name={name}&api_key={key}&base_url={base}&model={model}";
         try {
-            // 从数据库查询股票名称
-            StockIpo ipo = ipoMapper.selectOne(
-                new LambdaQueryWrapper<StockIpo>().eq(StockIpo::getStockCode, stockCode)
-            );
-            String stockName = ipo != null ? ipo.getStockName() : "";
-
-            // 从配置服务获取 API Key / Base URL / Model。
-            // 注意：业务层不要依赖 ConfigController，否则会让 Service 反向依赖接口层。
-            Map<String, Object> config = configService.getCurrent();
-            String apiKey = (String) config.getOrDefault("ai_api_key", "");
-            String baseUrl = (String) config.getOrDefault("ai_base_url", "");
-            String model = (String) config.getOrDefault("ai_model", "");
-
-            // 调用AI服务，传入完整参数
-            String url = aiServiceUrl + "/api/analyze/ipo?stock_code={code}&stock_name={name}&api_key={key}&base_url={base}&model={model}";
             Map response = restTemplate.getForObject(url, Map.class, stockCode, stockName, apiKey, baseUrl, model);
-            return response != null ? response : new HashMap<>();
-        } catch (Exception e) {
-            log.error("调用AI服务失败: {}", e.getMessage());
-            return Map.of("error", "AI服务暂时不可用: " + e.getMessage());
+            if (response == null) {
+                throw new AiServiceException("AI 服务返回为空");
+            }
+            return response;
+        } catch (RestClientException e) {
+            throw new AiServiceException(e.getMessage(), e);
         }
     }
 
@@ -235,7 +245,7 @@ public class IpoService {
             log.info("新股数据刷新完成");
             
         } catch (Exception e) {
-            log.error("刷新新股数据失败: {}", e.getMessage(), e);
+            throw new DataSyncException("刷新新股数据失败：" + e.getMessage(), e);
         }
     }
 
@@ -254,6 +264,10 @@ public class IpoService {
      * 获取指定板块的所有新股
      */
     public Map<String, Object> getIposBySector(String sector) {
+        if (sector == null || sector.trim().isEmpty()) {
+            throw new BusinessException("板块名称不能为空");
+        }
+
         LocalDate oneYearAgo = LocalDate.now().minusYears(1);
         LambdaQueryWrapper<StockIpo> wrapper = new LambdaQueryWrapper<>();
         wrapper.ge(StockIpo::getListingDate, oneYearAgo)
