@@ -257,7 +257,45 @@
             <el-button size="small" @click="copyAnalysis">复制报告</el-button>
           </div>
           <div class="report-body">
-            <pre>{{ ipoAnalysis }}</pre>
+            <div v-if="ipoStructuredAnalysis" class="structured-report">
+              <div class="rating-card">
+                <div>
+                  <div class="rating-label">AI 综合评级</div>
+                  <div class="rating-value">{{ ipoStructuredAnalysis.suggestion || '--' }}</div>
+                </div>
+                <el-tag size="large" :type="riskTagType(ipoStructuredAnalysis.riskLevel)">
+                  风险等级：{{ ipoStructuredAnalysis.riskLevel || '未知' }}
+                </el-tag>
+              </div>
+
+              <div class="confidence-row">
+                <span>AI 置信度</span>
+                <el-progress :percentage="confidencePercent(ipoStructuredAnalysis.confidence)" :stroke-width="10" />
+              </div>
+
+              <section class="analysis-section">
+                <h5>整体评价</h5>
+                <p>{{ ipoStructuredAnalysis.summary || '--' }}</p>
+              </section>
+
+              <section class="analysis-section two-cols">
+                <div>
+                  <h5>核心优势</h5>
+                  <ul>
+                    <li v-for="(item, index) in ipoStructuredAnalysis.advantages || []" :key="'adv-' + index">{{ item }}</li>
+                    <li v-if="!(ipoStructuredAnalysis.advantages || []).length" class="empty-mini">暂无</li>
+                  </ul>
+                </div>
+                <div>
+                  <h5>主要风险</h5>
+                  <ul>
+                    <li v-for="(item, index) in ipoStructuredAnalysis.risks || []" :key="'risk-' + index">{{ item }}</li>
+                    <li v-if="!(ipoStructuredAnalysis.risks || []).length" class="empty-mini">暂无</li>
+                  </ul>
+                </div>
+              </section>
+            </div>
+            <pre v-else>{{ ipoAnalysis }}</pre>
           </div>
         </main>
       </div>
@@ -330,6 +368,7 @@ const loadingComparison = ref(false)
 const showAnalysis = ref(false)
 const analysisFullscreen = ref(false)
 const ipoAnalysis = ref(null)
+const ipoStructuredAnalysis = ref(null)
 const ipoAnalysisResult = ref(null)
 const ipoNewsList = ref([])
 const selectedIpo = ref(null)
@@ -396,6 +435,7 @@ const analyzeIpo = async (row) => {
   showAnalysis.value = true
   analysisFullscreen.value = false
   ipoAnalysis.value = null
+  ipoStructuredAnalysis.value = null
   ipoAnalysisResult.value = null
   ipoNewsList.value = []
   try {
@@ -403,10 +443,44 @@ const analyzeIpo = async (row) => {
     const data = unwrapApiResponse(res) || {}
     ipoAnalysisResult.value = data
     ipoNewsList.value = data.news || []
-    ipoAnalysis.value = data.analysis || '分析完成'
+    if (data.analysis && typeof data.analysis === 'object') {
+      ipoStructuredAnalysis.value = data.analysis
+      ipoAnalysis.value = formatStructuredAnalysis(data.analysis)
+    } else {
+      ipoStructuredAnalysis.value = null
+      ipoAnalysis.value = data.analysis || '分析完成'
+    }
   } catch (e) {
+    ipoStructuredAnalysis.value = null
     ipoAnalysis.value = '分析失败: ' + e.message
   }
+}
+
+const formatStructuredAnalysis = (analysis) => {
+  if (!analysis) return ''
+  const advantages = (analysis.advantages || []).map(item => `- ${item}`).join('\n') || '- 暂无'
+  const risks = (analysis.risks || []).map(item => `- ${item}`).join('\n') || '- 暂无'
+  return [
+    `AI 综合评级：${analysis.suggestion || '--'}`,
+    `风险等级：${analysis.riskLevel || '未知'}`,
+    `AI 置信度：${confidencePercent(analysis.confidence)}%`,
+    `整体评价：${analysis.summary || '--'}`,
+    `核心优势：\n${advantages}`,
+    `主要风险：\n${risks}`
+  ].join('\n\n')
+}
+
+const confidencePercent = (value) => {
+  const numberValue = Number(value)
+  if (Number.isNaN(numberValue)) return 0
+  return Math.round(Math.max(0, Math.min(numberValue, 1)) * 100)
+}
+
+const riskTagType = (riskLevel) => {
+  if (['高', '中高'].includes(riskLevel)) return 'danger'
+  if (['中', '中低'].includes(riskLevel)) return 'warning'
+  if (riskLevel === '低') return 'success'
+  return 'info'
 }
 
 // 复制报告：用浏览器 Clipboard API，把右侧完整 AI 文本复制到剪贴板。
@@ -785,6 +859,81 @@ const onSectorClick = async (row) => {
   color: #21314f;
 }
 
+.structured-report {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: #21314f;
+}
+
+.rating-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(36, 107, 254, 0.1), rgba(125, 211, 252, 0.18));
+  border: 1px solid rgba(36, 107, 254, 0.14);
+}
+
+.rating-label {
+  margin-bottom: 6px;
+  color: #60708c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rating-value {
+  font-size: 28px;
+  font-weight: 900;
+  color: #12223f;
+}
+
+.confidence-row {
+  padding: 16px 18px;
+  border: 1px solid #edf1f7;
+  border-radius: 16px;
+  background: #fbfcff;
+}
+
+.confidence-row span {
+  display: block;
+  margin-bottom: 10px;
+  color: #60708c;
+  font-weight: 800;
+}
+
+.analysis-section {
+  padding: 18px 20px;
+  border: 1px solid #edf1f7;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.analysis-section h5 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: #12223f;
+}
+
+.analysis-section p {
+  margin: 0;
+  line-height: 1.8;
+}
+
+.analysis-section ul {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.8;
+}
+
+.two-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
 @media (max-width: 860px) {
   .analysis-layout {
     grid-template-columns: 1fr;
@@ -795,6 +944,14 @@ const onSectorClick = async (row) => {
     max-height: 260px;
     border-right: 0;
     border-bottom: 1px solid #edf1f7;
+  }
+  .rating-card,
+  .two-cols {
+    grid-template-columns: 1fr;
+  }
+  .rating-card {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

@@ -2,6 +2,7 @@ package com.hkstock.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
+import com.hkstock.config.CacheConfig;
 import com.hkstock.entity.StockIpo;
 import com.hkstock.exception.AiServiceException;
 import com.hkstock.exception.BusinessException;
@@ -11,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -39,6 +42,7 @@ public class IpoService {
     /**
      * 获取即将上市新股
      */
+    @Cacheable(value = CacheConfig.IPO_UPCOMING, key = "T(java.time.LocalDate).now().toString()")
     public List<StockIpo> getUpcomingIpo() {
         LambdaQueryWrapper<StockIpo> wrapper = new LambdaQueryWrapper<>();
         wrapper.ge(StockIpo::getListingDate, LocalDate.now())
@@ -49,6 +53,7 @@ public class IpoService {
     /**
      * 获取近一年新股横向对比
      */
+    @Cacheable(value = CacheConfig.IPO_COMPARISON, key = "(#sortBy ?: 'listingDate') + ':' + (#sortOrder ?: 'desc')")
     public Map<String, Object> getIpoComparison(String sortBy, String sortOrder) {
         LocalDate oneYearAgo = LocalDate.now().minusYears(1);
         LambdaQueryWrapper<StockIpo> wrapper = new LambdaQueryWrapper<>();
@@ -71,6 +76,7 @@ public class IpoService {
     /**
      * 新股板块统计
      */
+    @Cacheable(value = CacheConfig.IPO_SECTOR_STATS, key = "T(java.time.LocalDate).now().toString()")
     public Map<String, Object> getSectorStats() {
         LocalDate oneYearAgo = LocalDate.now().minusYears(1);
         LambdaQueryWrapper<StockIpo> wrapper = new LambdaQueryWrapper<>();
@@ -139,6 +145,7 @@ public class IpoService {
     /**
      * 破发率统计
      */
+    @Cacheable(value = CacheConfig.IPO_BREAK_RATE, key = "T(java.time.LocalDate).now().toString()")
     public Map<String, Object> getBreakRate() {
         LocalDate oneYearAgo = LocalDate.now().minusYears(1);
         LambdaQueryWrapper<StockIpo> wrapper = new LambdaQueryWrapper<>();
@@ -194,6 +201,13 @@ public class IpoService {
     /**
      * 刷新新股数据（定时任务调用）
      */
+    @CacheEvict(cacheNames = {
+            CacheConfig.IPO_UPCOMING,
+            CacheConfig.IPO_COMPARISON,
+            CacheConfig.IPO_SECTOR_STATS,
+            CacheConfig.IPO_BREAK_RATE,
+            CacheConfig.IPO_SECTOR_LIST
+    }, allEntries = true)
     public void refreshIpoData() {
         log.info("开始刷新新股数据...");
         try {
@@ -263,6 +277,7 @@ public class IpoService {
     /**
      * 获取指定板块的所有新股
      */
+    @Cacheable(value = CacheConfig.IPO_SECTOR_LIST, key = "#sector")
     public Map<String, Object> getIposBySector(String sector) {
         if (sector == null || sector.trim().isEmpty()) {
             throw new BusinessException("板块名称不能为空");

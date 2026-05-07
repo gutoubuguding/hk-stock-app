@@ -5,6 +5,8 @@ from fastapi import APIRouter, Query
 from typing import Dict, Any
 import httpx
 import os
+import json
+import re
 from bs4 import BeautifulSoup
 
 router = APIRouter()
@@ -89,6 +91,61 @@ def call_llm(prompt: str, api_key: str = None, base_url: str = None, model: str 
     except Exception as e:
         return f"LLM调用失败: {str(e)}"
 
+
+
+def parse_structured_json(raw: str) -> Dict[str, Any]:
+    """尽量从大模型输出中解析结构化 JSON，失败时保留原文并给前端兜底展示。"""
+    fallback = {
+        "summary": raw or "暂无分析结果",
+        "riskLevel": "未知",
+        "advantages": [],
+        "risks": [],
+        "suggestion": "暂无建议",
+        "confidence": 0.0,
+    }
+
+    if not raw:
+        return fallback
+
+    text = raw.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"\s*```$", "", text)
+
+    match = re.search(r"\{[\s\S]*\}", text)
+    json_text = match.group(0) if match else text
+
+    try:
+        data = json.loads(json_text)
+    except Exception:
+        return fallback
+
+    if not isinstance(data, dict):
+        return fallback
+
+    def as_list(value):
+        if isinstance(value, list):
+            return [str(item) for item in value if str(item).strip()]
+        if isinstance(value, str) and value.strip():
+            return [value.strip()]
+        return []
+
+    try:
+        confidence = float(data.get("confidence", fallback["confidence"]))
+    except Exception:
+        confidence = fallback["confidence"]
+    if confidence > 1:
+        confidence = confidence / 100
+    confidence = max(0.0, min(confidence, 1.0))
+
+    return {
+        "summary": str(data.get("summary") or fallback["summary"]),
+        "riskLevel": str(data.get("riskLevel") or fallback["riskLevel"]),
+        "advantages": as_list(data.get("advantages")),
+        "risks": as_list(data.get("risks")),
+        "suggestion": str(data.get("suggestion") or fallback["suggestion"]),
+        "confidence": round(confidence, 2),
+    }
 
 def infer_provider(base_url: str) -> str:
     lower = (base_url or "").lower()
@@ -554,39 +611,31 @@ def analyze_ipo(
     else:
         news_text = "暂无最新相关新闻"
     
-    # 2. 构建分析提示词（包含新闻上下文）
-    # 不做人为字数压缩；只要求结构完整，避免遗漏新闻或半截输出。
+    # 2. 构建结构化分析提示词（包含新闻上下文）
     prompt = f"""
-你是一位专业港股新股分析师。请完整分析港股新股 {stock_code} {search_name} 的上市后走势预期。
+你是一位专业港股新股分析师。请根据港股新股 {stock_code} {search_name} 的最新新闻，输出结构化申购/交易判断。
 
 【最新新闻，共 {min(len(news_list), 5)} 条】
 {news_text}
 
-请严格按下面结构输出，必须覆盖上面列出的每一条新闻，不要只分析第一条，也不要省略结论：
+请只返回严格 JSON，不要 Markdown，不要解释，不要代码块。字段必须完整：
+{{
+  "summary": "整体评价，80字以内",
+  "riskLevel": "低/中低/中/中高/高",
+  "advantages": ["核心优势1", "核心优势2"],
+  "risks": ["主要风险1", "主要风险2"],
+  "suggestion": "积极申购/谨慎申购/观望/回避/持有观察 等明确建议",
+  "confidence": 0.72
+}}
 
-一、逐条新闻判断
-对每条新闻分别分析：
-1. 新闻要点：
-   利好/利空：利好/利空/中性
-   影响程度：高/中/低
-   对股价的影响逻辑：
-
-二、综合走势预测
-- 首日/当前表现判断：
-- 短期（1-5个交易日）走势：
-- 中期（1-3个月）走势：
-
-三、核心风险
-列出主要风险，并说明为什么重要。
-
-四、综合评级与操作策略
-- 综合评级：强烈看好/看好/中性/看淡/强烈看淡
-- 操作策略：给出追高、观望、回调关注、止盈或规避等建议，并说明依据。
-
-要求：内容可以充分展开；以完整、准确、有依据为第一优先级。
+要求：
+1. advantages 和 risks 各给 2-4 条，必须结合新闻和港股新股环境。
+2. confidence 是 0 到 1 的小数。
+3. suggestion 必须简短明确，适合前端直接展示为 AI 综合评级。
 """
 
-    analysis = call_llm(prompt, api_key, base_url, model, max_tokens=8192)
+    raw_analysis = call_llm(prompt, api_key, base_url, model, max_tokens=1600)
+    structured_analysis = parse_structured_json(raw_analysis)
 
     actual_base_url = base_url if base_url else llm_config.get("base_url", "")
     actual_model = model if model else llm_config.get("model", "")
@@ -595,7 +644,8 @@ def analyze_ipo(
         "stock_name": search_name,
         "news_count": len(news_list),
         "news": news_list[:5],
-        "analysis": analysis,
+        "analysis": structured_analysis,
+        "raw_analysis": raw_analysis,
         "llm_provider": infer_provider(actual_base_url),
         "model": actual_model
     }

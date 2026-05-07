@@ -1,11 +1,13 @@
 package com.hkstock.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.hkstock.config.CacheConfig;
 import com.hkstock.entity.StockCalendar;
 import com.hkstock.mapper.StockCalendarMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
@@ -49,6 +51,7 @@ public class CalendarService {
     /**
      * 获取大盘概览 - 从 market_overview 表读取恒生/恒科/国企指数数据。
      */
+    @Cacheable(value = CacheConfig.MARKET_OVERVIEW, key = "'latest'")
     public Map<String, Object> getMarketOverview() {
         Map<String, Object> result = new HashMap<>();
         // 复用 Spring Boot datasource 配置，避免在代码里写死数据库地址/账号/密码。

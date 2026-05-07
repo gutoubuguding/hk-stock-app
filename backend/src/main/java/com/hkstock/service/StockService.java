@@ -1,6 +1,7 @@
 package com.hkstock.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.hkstock.config.CacheConfig;
 import com.hkstock.entity.StockInfo;
 import com.hkstock.entity.StockKline;
 import com.hkstock.entity.StockValuation;
@@ -10,6 +11,8 @@ import com.hkstock.mapper.StockValuationMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -35,6 +38,7 @@ public class StockService {
     /**
      * 搜索股票
      */
+    @Cacheable(value = CacheConfig.STOCK_SEARCH, key = "#keyword")
     public List<StockInfo> searchStocks(String keyword) {
         LambdaQueryWrapper<StockInfo> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(StockInfo::getStockCode, keyword)
@@ -48,6 +52,7 @@ public class StockService {
     /**
      * 获取K线数据
      */
+    @Cacheable(value = CacheConfig.STOCK_KLINE, key = "#stockCode + ':' + #periodType + ':' + #days")
     public List<StockKline> getKlineData(String stockCode, String periodType, Integer days) {
         // 5日K线：从日K数据动态聚合
         if ("5D".equals(periodType)) {
@@ -157,6 +162,7 @@ public class StockService {
     /**
      * 获取最新日K数据（当日关键信息）
      */
+    @Cacheable(value = CacheConfig.STOCK_DAILY_INFO, key = "#stockCode")
     public StockKline getLatestDailyInfo(String stockCode) {
         LambdaQueryWrapper<StockKline> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(StockKline::getStockCode, stockCode)
@@ -169,6 +175,7 @@ public class StockService {
     /**
      * 获取估值指标
      */
+    @Cacheable(value = CacheConfig.STOCK_VALUATION, key = "#stockCode")
     public StockValuation getValuation(String stockCode) {
         LambdaQueryWrapper<StockValuation> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(StockValuation::getStockCode, stockCode)
@@ -180,6 +187,7 @@ public class StockService {
     /**
      * 对比多只股票
      */
+    @Cacheable(value = CacheConfig.STOCK_COMPARISON, key = "#stockCodes.toString() + ':' + #metrics")
     public Map<String, Object> compareStocks(List<String> stockCodes, String metrics) {
         Map<String, Object> result = new HashMap<>();
         for (String code : stockCodes) {
@@ -200,6 +208,12 @@ public class StockService {
     /**
      * 从Futu OpenAPI刷新K线数据
      */
+    @CacheEvict(cacheNames = {
+            CacheConfig.STOCK_KLINE,
+            CacheConfig.STOCK_DAILY_INFO,
+            CacheConfig.STOCK_VALUATION,
+            CacheConfig.STOCK_COMPARISON
+    }, allEntries = true)
     public void refreshKlineData(String stockCode, String periodType, int days) {
         log.info("开始刷新K线数据: {} - {} - {}天", stockCode, periodType, days);
         try {
@@ -260,6 +274,10 @@ public class StockService {
     /**
      * 刷新股票列表
      */
+    @CacheEvict(cacheNames = {
+            CacheConfig.STOCK_SEARCH,
+            CacheConfig.STOCK_COMPARISON
+    }, allEntries = true)
     public void refreshStockList() {
         log.info("开始刷新股票列表...");
         try {
