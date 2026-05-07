@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * 新股服务
@@ -30,6 +31,7 @@ import java.util.*;
 public class IpoService {
 
     private static final Logger log = LoggerFactory.getLogger(IpoService.class);
+    private static final Pattern HK_STOCK_CODE_PATTERN = Pattern.compile("^(HK\\.)?\\d{5}$");
 
     private @Autowired StockIpoMapper ipoMapper;
     private @Autowired RestTemplate restTemplate;
@@ -168,9 +170,8 @@ public class IpoService {
      * AI分析新股走势
      */
     public Map<String, Object> getAiAnalysis(String stockCode) {
-        if (stockCode == null || stockCode.trim().isEmpty()) {
-            throw new BusinessException("股票代码不能为空");
-        }
+        validateStockCode(stockCode);
+        stockCode = normalizeStockCode(stockCode);
 
         // 从数据库查询股票名称
         StockIpo ipo = ipoMapper.selectOne(
@@ -194,8 +195,22 @@ public class IpoService {
             }
             return response;
         } catch (RestClientException e) {
-            throw new AiServiceException(e.getMessage(), e);
+            throw new AiServiceException("AI 服务暂时不可用，请稍后再试", e);
         }
+    }
+
+    private void validateStockCode(String stockCode) {
+        if (stockCode == null || stockCode.trim().isEmpty()) {
+            throw new BusinessException("股票代码不能为空");
+        }
+        if (!HK_STOCK_CODE_PATTERN.matcher(stockCode.trim()).matches()) {
+            throw new BusinessException("股票代码格式不正确");
+        }
+    }
+
+    private String normalizeStockCode(String stockCode) {
+        String normalized = stockCode.trim();
+        return normalized.startsWith("HK.") ? normalized.substring(3) : normalized;
     }
 
     /**

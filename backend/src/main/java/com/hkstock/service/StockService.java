@@ -5,6 +5,7 @@ import com.hkstock.config.CacheConfig;
 import com.hkstock.entity.StockInfo;
 import com.hkstock.entity.StockKline;
 import com.hkstock.entity.StockValuation;
+import com.hkstock.exception.BusinessException;
 import com.hkstock.mapper.StockInfoMapper;
 import com.hkstock.mapper.StockKlineMapper;
 import com.hkstock.mapper.StockValuationMapper;
@@ -21,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * 股票服务
@@ -29,6 +31,7 @@ import java.util.Map;
 public class StockService {
 
     private static final Logger log = LoggerFactory.getLogger(StockService.class);
+    private static final Pattern HK_STOCK_CODE_PATTERN = Pattern.compile("^(HK\\.)?\\d{5}$");
 
     private @Autowired StockInfoMapper stockInfoMapper;
     private @Autowired StockKlineMapper stockKlineMapper;
@@ -54,6 +57,7 @@ public class StockService {
      */
     @Cacheable(value = CacheConfig.STOCK_KLINE, key = "#stockCode + ':' + #periodType + ':' + #days")
     public List<StockKline> getKlineData(String stockCode, String periodType, Integer days) {
+        stockCode = normalizeAndValidateStockCode(stockCode);
         // 5日K线：从日K数据动态聚合
         if ("5D".equals(periodType)) {
             return aggregateKline(stockCode, 5, days);
@@ -164,6 +168,7 @@ public class StockService {
      */
     @Cacheable(value = CacheConfig.STOCK_DAILY_INFO, key = "#stockCode")
     public StockKline getLatestDailyInfo(String stockCode) {
+        stockCode = normalizeAndValidateStockCode(stockCode);
         LambdaQueryWrapper<StockKline> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(StockKline::getStockCode, stockCode)
                 .eq(StockKline::getPeriodType, "D")
@@ -177,6 +182,7 @@ public class StockService {
      */
     @Cacheable(value = CacheConfig.STOCK_VALUATION, key = "#stockCode")
     public StockValuation getValuation(String stockCode) {
+        stockCode = normalizeAndValidateStockCode(stockCode);
         LambdaQueryWrapper<StockValuation> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(StockValuation::getStockCode, stockCode)
                 .orderByDesc(StockValuation::getDataDate)
@@ -215,6 +221,7 @@ public class StockService {
             CacheConfig.STOCK_COMPARISON
     }, allEntries = true)
     public void refreshKlineData(String stockCode, String periodType, int days) {
+        stockCode = normalizeAndValidateStockCode(stockCode);
         log.info("开始刷新K线数据: {} - {} - {}天", stockCode, periodType, days);
         try {
             // 从Futu OpenAPI获取K线数据
@@ -318,5 +325,16 @@ public class StockService {
         } catch (Exception e) {
             log.error("刷新股票列表失败: {}", e.getMessage(), e);
         }
+    }
+
+    private String normalizeAndValidateStockCode(String stockCode) {
+        if (stockCode == null || stockCode.trim().isEmpty()) {
+            throw new BusinessException("股票代码不能为空");
+        }
+        String normalized = stockCode.trim();
+        if (!HK_STOCK_CODE_PATTERN.matcher(normalized).matches()) {
+            throw new BusinessException("股票代码格式不正确");
+        }
+        return normalized.startsWith("HK.") ? normalized.substring(3) : normalized;
     }
 }

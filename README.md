@@ -108,7 +108,20 @@ docker compose up -d --build
 后端：http://localhost:8080
 AI 服务：http://localhost:8082
 数据库：localhost:5432 / hk_stock
+接口文档：http://localhost:8080/swagger-ui.html
 ```
+
+## 接口文档
+
+后端集成了 Swagger / OpenAPI UI，启动后访问：
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+截图：
+
+![Swagger UI](docs/images/swagger-ui.png)
 
 常用命令：
 
