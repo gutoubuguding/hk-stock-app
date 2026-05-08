@@ -5,5 +5,4 @@ import com.hkstock.entity.Watchlist;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface WatchlistMapper extends BaseMapper<Watchlist> {
-}
+public interface WatchlistMapper extends BaseMapper<Watchlist> {}

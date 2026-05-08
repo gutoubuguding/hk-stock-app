@@ -5,5 +5,4 @@ import com.hkstock.entity.StockIpo;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface StockIpoMapper extends BaseMapper<StockIpo> {
-}
+public interface StockIpoMapper extends BaseMapper<StockIpo> {}

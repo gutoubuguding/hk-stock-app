@@ -5,5 +5,4 @@ import com.hkstock.entity.StockCalendar;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface StockCalendarMapper extends BaseMapper<StockCalendar> {
-}
+public interface StockCalendarMapper extends BaseMapper<StockCalendar> {}

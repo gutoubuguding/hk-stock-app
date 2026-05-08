@@ -5,5 +5,4 @@ import com.hkstock.entity.StockKline;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface StockKlineMapper extends BaseMapper<StockKline> {
-}
+public interface StockKlineMapper extends BaseMapper<StockKline> {}

@@ -9,14 +9,14 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class RestTemplateConfig {
 
-    @Value("${ai-service.url}")
-    private String aiServiceUrl;
+  @Value("${ai-service.url}")
+  private String aiServiceUrl;
 
-    @Bean
-    public RestTemplate restTemplate() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(10000);  // 10秒连接超时
-        factory.setReadTimeout(120000);     // 120秒读取超时
-        return new RestTemplate(factory);
-    }
+  @Bean
+  public RestTemplate restTemplate() {
+    SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+    factory.setConnectTimeout(10000); // 10秒连接超时
+    factory.setReadTimeout(120000); // 120秒读取超时
+    return new RestTemplate(factory);
+  }
 }
