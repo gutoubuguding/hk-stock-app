@@ -1,0 +1,18 @@
+# Keep source/config files readable in GitHub Raw and across Windows/macOS/Linux.
+* text=auto
+
+*.java text eol=lf
+*.xml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.env text eol=lf
+.env.example text eol=lf
+*.properties text eol=lf
+*.md text eol=lf
+*.js text eol=lf
+*.vue text eol=lf
+*.py text eol=lf
+*.sql text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
