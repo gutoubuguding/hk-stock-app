@@ -1,15 +1,14 @@
-package com.hkstock.common;
+package com.hkstock.exception;
 
-import com.hkstock.exception.AiServiceException;
-import com.hkstock.exception.BusinessException;
-import com.hkstock.exception.DataSyncException;
-import com.hkstock.exception.ExternalApiException;
+import com.hkstock.common.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/** 全局异常处理，保证接口失败时也返回稳定的 code/message/data 结构。 */
+/** 全局异常处理器，保证所有接口异常都返回统一的 ApiResponse 结构。 */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -24,24 +23,30 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(AiServiceException.class)
   public ApiResponse<Void> handleAiServiceException(AiServiceException e) {
     log.error("AI 服务异常: {}", e.getMessage(), e);
-    return ApiResponse.fail(e.getCode(), "AI 服务暂时不可用：" + e.getMessage());
+    return ApiResponse.fail(502, e.getMessage());
   }
 
   @ExceptionHandler(ExternalApiException.class)
   public ApiResponse<Void> handleExternalApiException(ExternalApiException e) {
     log.error("外部接口异常: {}", e.getMessage(), e);
-    return ApiResponse.fail(e.getCode(), "外部数据源暂时不可用：" + e.getMessage());
+    return ApiResponse.fail(502, e.getMessage());
   }
 
   @ExceptionHandler(DataSyncException.class)
   public ApiResponse<Void> handleDataSyncException(DataSyncException e) {
     log.error("数据同步异常: {}", e.getMessage(), e);
-    return ApiResponse.fail(e.getCode(), "数据同步失败：" + e.getMessage());
+    return ApiResponse.fail(e.getCode(), e.getMessage());
+  }
+
+  @ExceptionHandler({MethodArgumentNotValidException.class, MissingServletRequestParameterException.class})
+  public ApiResponse<Void> handleValidationException(Exception e) {
+    log.warn("请求参数不合法: {}", e.getMessage());
+    return ApiResponse.fail(400, "请求参数不合法");
   }
 
   @ExceptionHandler(Exception.class)
   public ApiResponse<Void> handleException(Exception e) {
     log.error("未处理异常: {}", e.getMessage(), e);
-    return ApiResponse.fail("服务器内部错误：" + e.getMessage());
+    return ApiResponse.fail(500, "服务器内部错误");
   }
 }
