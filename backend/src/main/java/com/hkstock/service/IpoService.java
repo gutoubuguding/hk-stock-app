@@ -32,6 +32,11 @@ public class IpoService {
 
     private static final Logger log = LoggerFactory.getLogger(IpoService.class);
     private static final Pattern HK_STOCK_CODE_PATTERN = Pattern.compile("^(HK\\.)?\\d{5}$");
+    /**
+     * 板块样本数太少时，均值/破发率容易被单只股票扭曲，前端展示也会非常杂乱。
+     * 默认只展示最近一年内至少 3 只新股的板块，少于 3 只的板块仍计入汇总元数据。
+     */
+    private static final int MIN_SECTOR_SAMPLE_SIZE = 3;
 
     private @Autowired StockIpoMapper ipoMapper;
     private @Autowired RestTemplate restTemplate;
@@ -123,15 +128,17 @@ public class IpoService {
                 }
             }
 
-            Map<String, Object> s = new HashMap<>();
-            s.put("sector", sector);
-            s.put("count", total);
-            s.put("avgFirstDayChange", hasChange > 0 ? Math.round(totalChange / hasChange * 100.0) / 100.0 : null);
-            s.put("avgSevenDayChange", has7d > 0 ? Math.round(total7dChange / has7d * 100.0) / 100.0 : null);
-            s.put("avgThirtyDayChange", has30d > 0 ? Math.round(total30dChange / has30d * 100.0) / 100.0 : null);
-            s.put("breakRate", hasChange > 0 ? Math.round((double) brokenCount / hasChange * 10000.0) / 100.0 : null);
-            s.put("brokenCount", brokenCount);
-            stats.add(s);
+            if (total >= MIN_SECTOR_SAMPLE_SIZE) {
+                Map<String, Object> s = new HashMap<>();
+                s.put("sector", sector);
+                s.put("count", total);
+                s.put("avgFirstDayChange", hasChange > 0 ? Math.round(totalChange / hasChange * 100.0) / 100.0 : null);
+                s.put("avgSevenDayChange", has7d > 0 ? Math.round(total7dChange / has7d * 100.0) / 100.0 : null);
+                s.put("avgThirtyDayChange", has30d > 0 ? Math.round(total30dChange / has30d * 100.0) / 100.0 : null);
+                s.put("breakRate", hasChange > 0 ? Math.round((double) brokenCount / hasChange * 10000.0) / 100.0 : null);
+                s.put("brokenCount", brokenCount);
+                stats.add(s);
+            }
         }
 
         // 按数量降序排列
@@ -140,6 +147,10 @@ public class IpoService {
         Map<String, Object> result = new HashMap<>();
         result.put("totalSectors", stats.size());
         result.put("total", list.size());
+        result.put("rawTotalSectors", bySector.size());
+        result.put("hiddenSmallSectors", bySector.values().stream().filter(ipos -> ipos.size() < MIN_SECTOR_SAMPLE_SIZE).count());
+        result.put("hiddenSmallSectorStocks", bySector.values().stream().filter(ipos -> ipos.size() < MIN_SECTOR_SAMPLE_SIZE).mapToInt(List::size).sum());
+        result.put("minSectorSampleSize", MIN_SECTOR_SAMPLE_SIZE);
         result.put("stats", stats);
         return result;
     }

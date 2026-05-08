@@ -116,7 +116,7 @@
       <el-tab-pane label="板块统计" name="sector">
         <div v-if="sectorStats && sectorStats.stats && sectorStats.stats.length > 0">
           <div class="sector-summary">
-            <el-statistic title="板块总数" :value="sectorStats.totalSectors" />
+            <el-statistic title="有效板块数" :value="sectorStats.totalSectors" />
             <el-statistic title="新股总数" :value="sectorStats.total" />
           </div>
           <el-table :data="sectorStats.stats" stripe style="margin-top: 16px;" @row-click="onSectorClick" cursor="pointer">
@@ -149,7 +149,10 @@
             </el-table-column>
             <el-table-column prop="brokenCount" label="破发数量" width="100" />
           </el-table>
-          <div class="sector-hint">点击板块名称查看该板块下的所有公司</div>
+          <div class="sector-hint">
+            点击板块名称查看该板块下的所有公司；已过滤样本数少于 {{ sectorStats.minSectorSampleSize || 3 }} 只的低参考性板块
+            <span v-if="sectorStats.hiddenSmallSectors">（隐藏 {{ sectorStats.hiddenSmallSectors }} 个小板块 / {{ sectorStats.hiddenSmallSectorStocks }} 只股票）</span>
+          </div>
         </div>
         <div v-else-if="sectorStats" class="empty-text">暂无板块统计数据</div>
         <div v-else class="empty-text">加载中...</div>
