@@ -74,41 +74,46 @@ hk-stock-app/
 
 ## Docker Compose 一键启动
 
-项目已提供 Docker Compose 编排，可一次启动 PostgreSQL、Spring Boot 后端、FastAPI AI 服务和 Vue 前端。
+项目根目录已提供 `docker-compose.yml`，面试官 clone 后可以直接一键启动 PostgreSQL、Spring Boot 后端、FastAPI AI 服务和 Vue 前端。
 
-### 1. 准备环境变量
+### 最短启动
 
 ```bash
-copy .env.example .env
+docker compose up -d
 ```
 
-至少修改 `.env` 里的数据库密码：
-
-```env
-POSTGRES_PASSWORD=your_database_password
-```
-
-如果需要在 Docker 容器里连接宿主机的 Futu OpenD，默认会使用：
-
-```env
-FUTU_OPEND_HOST=host.docker.internal
-FUTU_OPEND_PORT=11111
-```
-
-### 2. 一键启动
+首次启动如果本地没有镜像，Docker Compose 会按各模块 Dockerfile 自动构建。需要强制重建时再执行：
 
 ```bash
 docker compose up -d --build
 ```
 
-启动后访问：
+### 端口说明
 
 ```text
-前端：http://localhost:3000
-后端：http://localhost:8080
-AI 服务：http://localhost:8082
-数据库：localhost:5432 / hk_stock
-接口文档：http://localhost:8080/swagger-ui.html
+frontend:   http://localhost:3000
+backend:    http://localhost:8080
+ai-service: http://localhost:8082
+postgres:   localhost:5432 / hk_stock
+Swagger:    http://localhost:8080/swagger-ui.html
+```
+
+### 可选：准备本地环境变量
+
+不创建 `.env` 也能用默认值启动；如需修改数据库密码、Futu OpenD 地址或端口，可复制示例文件：
+
+```bash
+copy .env.example .env
+```
+
+常用配置：
+
+```env
+POSTGRES_DB=hk_stock
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_database_password
+FUTU_OPEND_HOST=host.docker.internal
+FUTU_OPEND_PORT=11111
 ```
 
 ## 接口文档
