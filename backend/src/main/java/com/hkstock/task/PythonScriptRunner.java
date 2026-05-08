@@ -16,9 +16,9 @@ import org.springframework.stereotype.Component;
  * <p>定时任务只负责调度语义；脚本路径解析、输出读取、超时、重试和失败处理统一放在这里。
  */
 @Component
-public class ScriptRunner {
+public class PythonScriptRunner {
 
-  private static final Logger log = LoggerFactory.getLogger(ScriptRunner.class);
+  private static final Logger log = LoggerFactory.getLogger(PythonScriptRunner.class);
   private static final int MAX_RETRY = 1;
 
   @Value("${app.python.executable:python}")

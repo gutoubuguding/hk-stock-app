@@ -19,27 +19,27 @@ public class KlineSyncTask {
   private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
   private static final String KLINE_SCRIPT = "sync_daily_kline.py";
 
-  private @Autowired ScriptRunner scriptRunner;
+  private @Autowired PythonScriptRunner pythonScriptRunner;
   private @Autowired CacheManager cacheManager;
 
   @Scheduled(cron = "0 0 9 * * ?")
   public void syncAllKlineMorning() {
     log.info("【K线同步】早市预热开始 (时间: {})", LocalDateTime.now().format(DF));
-    scriptRunner.run(KLINE_SCRIPT, "K线同步-早市预热");
+    pythonScriptRunner.run(KLINE_SCRIPT, "K线同步-早市预热");
     clearStockMarketCaches();
   }
 
   @Scheduled(cron = "0 0 12 * * ?")
   public void syncAllKlineNoon() {
     log.info("【K线同步】午间同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    scriptRunner.run(KLINE_SCRIPT, "K线同步-午间");
+    pythonScriptRunner.run(KLINE_SCRIPT, "K线同步-午间");
     clearStockMarketCaches();
   }
 
   @Scheduled(cron = "0 30 16 * * ?")
   public void syncAllKlineClose() {
     log.info("【K线同步】收盘同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    scriptRunner.run(KLINE_SCRIPT, "K线同步-收盘");
+    pythonScriptRunner.run(KLINE_SCRIPT, "K线同步-收盘");
     clearStockMarketCaches();
   }
 

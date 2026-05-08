@@ -20,7 +20,7 @@ public class MarketOverviewSyncTask {
   private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
   private static final String MARKET_OVERVIEW_SCRIPT = "sync_market_overview.py";
 
-  private @Autowired ScriptRunner scriptRunner;
+  private @Autowired PythonScriptRunner pythonScriptRunner;
   private @Autowired StockService stockService;
   private @Autowired CacheManager cacheManager;
 
@@ -34,14 +34,14 @@ public class MarketOverviewSyncTask {
   @Scheduled(cron = "0 */30 9-16 * * MON-FRI")
   public void syncMarketOverviewIntraday() {
     log.info("【大盘概览】盘中同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    scriptRunner.run(MARKET_OVERVIEW_SCRIPT, "大盘概览-盘中");
+    pythonScriptRunner.run(MARKET_OVERVIEW_SCRIPT, "大盘概览-盘中");
     clear(CacheConfig.MARKET_OVERVIEW);
   }
 
   @Scheduled(cron = "0 10 17 * * MON-FRI")
   public void syncMarketOverviewClose() {
     log.info("【大盘概览】收盘后同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    scriptRunner.run(MARKET_OVERVIEW_SCRIPT, "大盘概览-收盘");
+    pythonScriptRunner.run(MARKET_OVERVIEW_SCRIPT, "大盘概览-收盘");
     clear(CacheConfig.MARKET_OVERVIEW);
   }
 

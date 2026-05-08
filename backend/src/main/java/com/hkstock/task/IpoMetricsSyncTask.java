@@ -11,33 +11,32 @@ import org.springframework.cache.CacheManager;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** 新股 IPO 基础数据同步任务。 */
+/** 近一年 IPO 对比、板块统计和破发率等衍生指标同步任务。 */
 @Component
-public class IpoSyncTask {
+public class IpoMetricsSyncTask {
 
-  private static final Logger log = LoggerFactory.getLogger(IpoSyncTask.class);
+  private static final Logger log = LoggerFactory.getLogger(IpoMetricsSyncTask.class);
   private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-  private static final String IPO_SCRIPT = "sync_ipo_futu.py";
+  private static final String IPO_METRICS_SCRIPT = "sync_ipo_kline_metrics.py";
 
   private @Autowired PythonScriptRunner pythonScriptRunner;
   private @Autowired CacheManager cacheManager;
 
-  @Scheduled(cron = "0 0 8 * * ?")
-  public void updateIpoDataMorning() {
-    log.info("【IPO同步】早市同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    pythonScriptRunner.run(IPO_SCRIPT, "IPO早市同步");
+  @Scheduled(cron = "0 5 17 * * MON-FRI")
+  public void syncIpoComparisonMetricsAfterClose() {
+    log.info("【IPO指标同步】收盘后同步开始 (时间: {})", LocalDateTime.now().format(DF));
+    pythonScriptRunner.run(IPO_METRICS_SCRIPT, "IPO近一年对比指标-收盘");
     clearIpoCaches();
   }
 
-  @Scheduled(cron = "0 0 20 * * ?")
-  public void updateIpoDataEvening() {
-    log.info("【IPO同步】晚市同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    pythonScriptRunner.run(IPO_SCRIPT, "IPO晚市同步");
+  @Scheduled(cron = "0 20 20 * * ?")
+  public void syncIpoComparisonMetricsEvening() {
+    log.info("【IPO指标同步】晚间补偿同步开始 (时间: {})", LocalDateTime.now().format(DF));
+    pythonScriptRunner.run(IPO_METRICS_SCRIPT, "IPO近一年对比指标-晚间");
     clearIpoCaches();
   }
 
   private void clearIpoCaches() {
-    clear(CacheConfig.IPO_UPCOMING);
     clear(CacheConfig.IPO_COMPARISON);
     clear(CacheConfig.IPO_SECTOR_STATS);
     clear(CacheConfig.IPO_BREAK_RATE);

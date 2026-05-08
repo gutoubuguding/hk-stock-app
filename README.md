@@ -252,5 +252,12 @@ curl http://localhost:8082/health
 - 新股接口：`backend/src/main/java/com/hkstock/controller/IpoController.java`
 - 新股业务：`backend/src/main/java/com/hkstock/service/IpoService.java`
 - AI 配置服务：`backend/src/main/java/com/hkstock/service/ConfigService.java`
-- 定时任务：`backend/src/main/java/com/hkstock/task/ScheduledTasks.java`
+- 定时任务：`backend/src/main/java/com/hkstock/task/`
+  - `IpoSyncTask.java`：IPO 基础数据同步
+  - `IpoMetricsSyncTask.java`：IPO 对比/板块/破发率指标同步
+  - `MarketOverviewSyncTask.java`：大盘概览同步
+  - `CalendarSyncTask.java`：财报/分红日历同步
+  - `KlineSyncTask.java`：K 线数据同步
+  - `PriceAlertTask.java`：价格预警检查
+  - `PythonScriptRunner.java`：统一执行 Python 脚本、读取 stdout/stderr、处理超时和失败
 - AI 分析：`ai-service/app/routers/analyze.py`
