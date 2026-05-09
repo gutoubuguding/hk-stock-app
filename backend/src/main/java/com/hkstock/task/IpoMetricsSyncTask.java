@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** 近一年 IPO 对比、板块统计和破发率等衍生指标同步任务。 */
+/** IPO performance, sector and break-rate metrics sync task. */
 @Component
 public class IpoMetricsSyncTask {
 
@@ -22,15 +22,15 @@ public class IpoMetricsSyncTask {
 
   @Scheduled(cron = "0 5 17 * * MON-FRI")
   public void syncIpoComparisonMetricsAfterClose() {
-    log.info("【IPO指标同步】收盘后同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    pythonScriptRunner.run(IPO_METRICS_SCRIPT, "IPO近一年对比指标-收盘");
+    log.info("[IPO metrics sync] After-close sync started at {}", LocalDateTime.now().format(DF));
+    pythonScriptRunner.run(IPO_METRICS_SCRIPT, "IPO metrics after-close sync");
     cacheInvalidationService.evictIpoMetricsCaches();
   }
 
   @Scheduled(cron = "0 20 20 * * ?")
   public void syncIpoComparisonMetricsEvening() {
-    log.info("【IPO指标同步】晚间补偿同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    pythonScriptRunner.run(IPO_METRICS_SCRIPT, "IPO近一年对比指标-晚间");
+    log.info("[IPO metrics sync] Evening compensation sync started at {}", LocalDateTime.now().format(DF));
+    pythonScriptRunner.run(IPO_METRICS_SCRIPT, "IPO metrics evening sync");
     cacheInvalidationService.evictIpoMetricsCaches();
   }
 }

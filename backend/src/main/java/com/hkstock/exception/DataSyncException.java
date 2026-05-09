@@ -1,6 +1,6 @@
 package com.hkstock.exception;
 
-/** 数据同步异常，例如 IPO、K 线、日历等同步任务失败。 */
+/** Data sync exception for IPO, K-line, calendar and other scheduled jobs. */
 public class DataSyncException extends RuntimeException {
 
   private final Integer code;

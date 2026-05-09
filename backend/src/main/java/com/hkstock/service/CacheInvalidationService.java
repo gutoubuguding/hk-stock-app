@@ -8,7 +8,7 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
-/** 数据同步完成后的缓存清理服务，避免同步脚本写入新数据后接口仍命中旧缓存。 */
+/** Clears read caches after data sync jobs write fresh market data. */
 @Service
 public class CacheInvalidationService {
 
@@ -16,7 +16,7 @@ public class CacheInvalidationService {
 
   private @Autowired CacheManager cacheManager;
 
-  /** IPO 基础数据变更后，清理所有 IPO 相关查询缓存。 */
+  /** IPO base data changed: upcoming IPOs and derived IPO dashboards may be stale. */
   public void evictIpoDataCaches() {
     clear(
         CacheConfig.IPO_UPCOMING,
@@ -26,7 +26,7 @@ public class CacheInvalidationService {
         CacheConfig.IPO_SECTOR_LIST);
   }
 
-  /** IPO 衍生指标变更后，清理依赖指标/K 线统计的 IPO 缓存。 */
+  /** IPO metrics changed: comparison, sector stats and break-rate dashboards may be stale. */
   public void evictIpoMetricsCaches() {
     clear(
         CacheConfig.IPO_COMPARISON,
@@ -35,7 +35,7 @@ public class CacheInvalidationService {
         CacheConfig.IPO_SECTOR_LIST);
   }
 
-  /** K 线、估值等行情数据变更后，清理个股行情相关缓存。 */
+  /** K-line or valuation data changed: stock detail and comparison caches may be stale. */
   public void evictStockMarketCaches() {
     clear(
         CacheConfig.STOCK_KLINE,
@@ -44,12 +44,12 @@ public class CacheInvalidationService {
         CacheConfig.STOCK_COMPARISON);
   }
 
-  /** 股票基础列表变更后，清理搜索与股票对比缓存。 */
+  /** Stock master data changed: search and comparison caches may be stale. */
   public void evictStockListCaches() {
     clear(CacheConfig.STOCK_SEARCH, CacheConfig.STOCK_COMPARISON);
   }
 
-  /** 大盘概览数据变更后，清理大盘概览缓存。 */
+  /** Market overview data changed. */
   public void evictMarketOverviewCaches() {
     clear(CacheConfig.MARKET_OVERVIEW);
   }
@@ -58,11 +58,11 @@ public class CacheInvalidationService {
     for (String cacheName : cacheNames) {
       Cache cache = cacheManager.getCache(cacheName);
       if (cache == null) {
-        log.warn("缓存不存在，跳过清理: {}", cacheName);
+        log.warn("Cache not found, skip clear: {}", cacheName);
         continue;
       }
       cache.clear();
-      log.info("已清理缓存: {}", cacheName);
+      log.info("Cleared cache: {}", cacheName);
     }
   }
 }

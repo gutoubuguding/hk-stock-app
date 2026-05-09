@@ -1,6 +1,6 @@
 package com.hkstock.exception;
 
-/** AI 微服务调用异常。 */
+/** Exception thrown when the AI microservice call fails. */
 public class AiServiceException extends ExternalApiException {
 
   public AiServiceException(String message) {

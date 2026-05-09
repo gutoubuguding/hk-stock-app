@@ -1,6 +1,6 @@
 package com.hkstock.exception;
 
-/** 外部数据源/API 调用异常，例如行情源、新闻源、第三方接口不可用。 */
+/** External API exception for market data, news and third-party service failures. */
 public class ExternalApiException extends RuntimeException {
 
   private final Integer code;

@@ -8,11 +8,7 @@ import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * 本地缓存配置。
- *
- * <p>高频读接口以“短 TTL + 数据同步后主动清理”为主，既减少重复聚合/数据库查询， 又避免行情、新股指标这类数据长时间不刷新。
- */
+/** Local read-through cache configuration for high-frequency query APIs. */
 @Configuration
 @EnableCaching
 public class CacheConfig {

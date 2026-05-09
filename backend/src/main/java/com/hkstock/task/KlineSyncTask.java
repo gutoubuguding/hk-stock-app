@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** K 线批量同步任务。 */
+/** Batch K-line sync task. */
 @Component
 public class KlineSyncTask {
 
@@ -22,22 +22,22 @@ public class KlineSyncTask {
 
   @Scheduled(cron = "0 0 9 * * ?")
   public void syncAllKlineMorning() {
-    log.info("【K线同步】早市预热开始 (时间: {})", LocalDateTime.now().format(DF));
-    pythonScriptRunner.run(KLINE_SCRIPT, "K线同步-早市预热");
+    log.info("[K-line sync] Morning warm-up sync started at {}", LocalDateTime.now().format(DF));
+    pythonScriptRunner.run(KLINE_SCRIPT, "K-line morning warm-up sync");
     cacheInvalidationService.evictStockMarketCaches();
   }
 
   @Scheduled(cron = "0 0 12 * * ?")
   public void syncAllKlineNoon() {
-    log.info("【K线同步】午间同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    pythonScriptRunner.run(KLINE_SCRIPT, "K线同步-午间");
+    log.info("[K-line sync] Noon sync started at {}", LocalDateTime.now().format(DF));
+    pythonScriptRunner.run(KLINE_SCRIPT, "K-line noon sync");
     cacheInvalidationService.evictStockMarketCaches();
   }
 
   @Scheduled(cron = "0 30 16 * * ?")
   public void syncAllKlineClose() {
-    log.info("【K线同步】收盘同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    pythonScriptRunner.run(KLINE_SCRIPT, "K线同步-收盘");
+    log.info("[K-line sync] Close sync started at {}", LocalDateTime.now().format(DF));
+    pythonScriptRunner.run(KLINE_SCRIPT, "K-line close sync");
     cacheInvalidationService.evictStockMarketCaches();
   }
 }

@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** 新股 IPO 基础数据同步任务。 */
+/** IPO base data sync task. */
 @Component
 public class IpoSyncTask {
 
@@ -22,15 +22,15 @@ public class IpoSyncTask {
 
   @Scheduled(cron = "0 0 8 * * ?")
   public void updateIpoDataMorning() {
-    log.info("【IPO同步】早市同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    pythonScriptRunner.run(IPO_SCRIPT, "IPO早市同步");
+    log.info("[IPO sync] Morning sync started at {}", LocalDateTime.now().format(DF));
+    pythonScriptRunner.run(IPO_SCRIPT, "IPO morning sync");
     cacheInvalidationService.evictIpoDataCaches();
   }
 
   @Scheduled(cron = "0 0 20 * * ?")
   public void updateIpoDataEvening() {
-    log.info("【IPO同步】晚市同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    pythonScriptRunner.run(IPO_SCRIPT, "IPO晚市同步");
+    log.info("[IPO sync] Evening sync started at {}", LocalDateTime.now().format(DF));
+    pythonScriptRunner.run(IPO_SCRIPT, "IPO evening sync");
     cacheInvalidationService.evictIpoDataCaches();
   }
 }

@@ -11,9 +11,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * Python 同步脚本统一执行器。
+ * Shared Python script runner for scheduled sync tasks.
  *
- * <p>定时任务只负责调度语义；脚本路径解析、输出读取、超时、重试和失败处理统一放在这里。
+ * <p>Task classes only describe scheduling intent. Script path resolution, process lifecycle,
+ * stdout/stderr logging, timeout handling and retry behavior are centralized here.
  */
 @Component
 public class PythonScriptRunner {
@@ -42,7 +43,7 @@ public class PythonScriptRunner {
       } catch (DataSyncException e) {
         lastError = e;
         if (attempt <= MAX_RETRY) {
-          log.warn("【{}】执行失败，准备第 {} 次重试：{}", taskName, attempt, e.getMessage());
+          log.warn("[{}] Failed, retrying attempt {}: {}", taskName, attempt, e.getMessage());
         }
       }
     }
@@ -52,7 +53,7 @@ public class PythonScriptRunner {
 
   private void doRun(String scriptPath, String taskName, long timeoutMinutes, int attempt) {
     long startTime = System.currentTimeMillis();
-    log.info("【{}】开始执行 Python 脚本，第 {} 次，脚本: {}", taskName, attempt, scriptPath);
+    log.info("[{}] Starting Python script, attempt {}, script: {}", taskName, attempt, scriptPath);
 
     try {
       ProcessBuilder pb = new ProcessBuilder(pythonExe, scriptPath);
@@ -65,7 +66,7 @@ public class PythonScriptRunner {
       boolean finished = process.waitFor(timeoutMinutes, TimeUnit.MINUTES);
       if (!finished) {
         process.destroyForcibly();
-        throw new DataSyncException("脚本执行超时（>" + timeoutMinutes + "分钟）");
+        throw new DataSyncException("Script timed out after " + timeoutMinutes + " minute(s)");
       }
 
       joinQuietly(stdoutReader);
@@ -74,14 +75,15 @@ public class PythonScriptRunner {
       int exitCode = process.exitValue();
       long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
       if (exitCode != 0) {
-        throw new DataSyncException("脚本退出码异常: " + exitCode + "，耗时: " + elapsedSeconds + "秒");
+        throw new DataSyncException(
+            "Script exited with code " + exitCode + ", elapsed seconds: " + elapsedSeconds);
       }
 
-      log.info("【{}】完成，耗时: {}秒", taskName, elapsedSeconds);
+      log.info("[{}] Completed, elapsed seconds: {}", taskName, elapsedSeconds);
     } catch (DataSyncException e) {
       throw e;
     } catch (Exception e) {
-      throw new DataSyncException("脚本执行异常: " + e.getMessage(), e);
+      throw new DataSyncException("Script execution failed: " + e.getMessage(), e);
     }
   }
 
@@ -102,7 +104,7 @@ public class PythonScriptRunner {
                   }
                 }
               } catch (Exception e) {
-                log.warn("[{}] 读取{}异常", taskName, errorStream ? "stderr" : "stdout", e);
+                log.warn("[{}] Failed to read {}", taskName, errorStream ? "stderr" : "stdout", e);
               }
             },
             taskName + (errorStream ? "-stderr" : "-stdout"));

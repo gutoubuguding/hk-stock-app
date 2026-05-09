@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** 行情概览与股票列表同步任务。 */
+/** Market overview and stock master data sync tasks. */
 @Component
 public class MarketOverviewSyncTask {
 
@@ -24,23 +24,23 @@ public class MarketOverviewSyncTask {
 
   @Scheduled(cron = "0 0 9 * * ?")
   public void updateStockList() {
-    log.info("【股票列表】开始更新");
+    log.info("[Stock list] Refresh started");
     stockService.refreshStockList();
     cacheInvalidationService.evictStockListCaches();
-    log.info("【股票列表】更新完成");
+    log.info("[Stock list] Refresh completed");
   }
 
   @Scheduled(cron = "0 */30 9-16 * * MON-FRI")
   public void syncMarketOverviewIntraday() {
-    log.info("【大盘概览】盘中同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    pythonScriptRunner.run(MARKET_OVERVIEW_SCRIPT, "大盘概览-盘中");
+    log.info("[Market overview] Intraday sync started at {}", LocalDateTime.now().format(DF));
+    pythonScriptRunner.run(MARKET_OVERVIEW_SCRIPT, "Market overview intraday sync");
     cacheInvalidationService.evictMarketOverviewCaches();
   }
 
   @Scheduled(cron = "0 10 17 * * MON-FRI")
   public void syncMarketOverviewClose() {
-    log.info("【大盘概览】收盘后同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    pythonScriptRunner.run(MARKET_OVERVIEW_SCRIPT, "大盘概览-收盘");
+    log.info("[Market overview] Close sync started at {}", LocalDateTime.now().format(DF));
+    pythonScriptRunner.run(MARKET_OVERVIEW_SCRIPT, "Market overview close sync");
     cacheInvalidationService.evictMarketOverviewCaches();
   }
 }

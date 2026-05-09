@@ -1,88 +1,76 @@
-# 港股分析应用
+# 港股智能分析平台
 
-一个本地运行的港股分析工作台，包含股票搜索、K 线/技术指标、自选股、价格预警、新股表现统计、新股 AI 分析、财报/分红日历和 AI 模型配置。
+**HK Stock Intelligence Platform** 是一个本地可运行的港股智能分析系统，覆盖行情检索、K 线与技术指标、自选股、价格预警、新股表现统计、新股 AI 分析、财报/分红日历、AI 模型配置和数据同步任务。
+
+项目采用 Vue 3 + Spring Boot 3.2 + FastAPI + PostgreSQL，提供 Docker Compose 一键启动、Swagger 接口文档、定时同步任务和统一 API 响应结构，适合作为 Java 后端 / 全栈 / 金融科技方向作品集项目。
 
 ## 功能概览
 
-- **大盘概览**：展示港股市场概览数据。
-- **股票搜索**：按代码/名称搜索港股。
-- **股票详情**：K 线、技术指标、估值、新闻和 AI 分析入口。
+- **大盘概览**：展示港股市场整体行情与指数概览。
+- **股票搜索**：按代码或名称搜索港股。
+- **股票详情**：展示 K 线、技术指标、估值、新闻和 AI 分析入口。
 - **自选股**：维护关注列表，查看最新行情和估值信息。
-- **新股 AI 分析**：即将上市、近一年新股对比、板块统计、破发率、单只新股 AI 报告。
-- **日历**：财报、分红和市场事件。
-- **价格预警**：设置价格条件并定时检查。
-- **设置**：配置 OpenAI-compatible / MiniMax / Xiaomi MiMo / DeepSeek / Qwen 等模型。
+- **新股分析**：即将上市 IPO、近一年新股对比、板块统计、破发率和单只新股 AI 报告。
+- **日历**：财报、分红和市场事件日历。
+- **价格预警**：配置价格触发条件，定时检查并返回触发结果。
+- **AI 模型配置**：支持 OpenAI-compatible / MiniMax / Xiaomi MiMo / DeepSeek / Qwen 等模型配置。
+- **数据同步**：Futu OpenD、AKShare、AAStocks/HKEX 公告与新闻爬虫多源同步。
 
 ## 技术栈
 
 | 模块 | 技术 |
 | --- | --- |
 | 前端 | Vue 3 + Vite + Element Plus + ECharts |
-| 后端 | Java 17 + Spring Boot 3.2 + MyBatis-Plus |
+| 后端 | Java 17 + Spring Boot 3.2 + MyBatis-Plus + Caffeine Cache |
 | AI 微服务 | Python FastAPI + httpx + akshare |
 | 数据库 | PostgreSQL |
-| 数据源 | Futu OpenD、AKShare、AAStocks/新闻爬虫 |
+| 数据源 | Futu OpenD、AKShare、AAStocks、HKEXnews、新闻爬虫 |
+| 工程化 | Docker Compose、Swagger/OpenAPI、GitHub Actions |
 
 ## 项目结构
 
 ```text
-hk-stock-app/
-├── backend/              # Java Spring Boot 后端
+hk-stock-intelligence-platform/
+├── backend/                         # Java Spring Boot 后端
 │   ├── pom.xml
 │   └── src/main/
 │       ├── java/com/hkstock/
-│       │   ├── HkStockApplication.java    # 后端启动类
-│       │   ├── controller/                # REST API 接口层
-│       │   ├── service/                   # 业务逻辑层
-│       │   ├── mapper/                    # MyBatis-Plus 数据库访问层
-│       │   ├── entity/                    # 数据表实体类
-│       │   ├── config/                    # Spring 配置
-│       │   └── task/                      # 定时同步/预警任务
+│       │   ├── HkStockApplication.java
+│       │   ├── common/              # 统一响应结构
+│       │   ├── config/              # Spring / 缓存 / 跨域配置
+│       │   ├── controller/          # REST API 接口
+│       │   ├── entity/              # 数据表实体
+│       │   ├── exception/           # 业务异常和全局异常处理
+│       │   ├── mapper/              # MyBatis-Plus 数据访问层
+│       │   ├── service/             # 业务逻辑
+│       │   └── task/                # 定时同步与预警任务
 │       └── resources/
-│           ├── application.yml            # 本地配置，使用环境变量占位
-│           ├── application.example.yml    # 示例配置，可安全提交
-│           └── schema.sql                 # 数据库建表脚本
-│
-├── frontend/             # Vue 前端
+│           ├── application.yml
+│           └── schema.sql
+├── frontend/                        # Vue 前端
 │   ├── package.json
 │   ├── vite.config.js
-│   ├── index.html
 │   └── src/
-│       ├── main.js
-│       ├── App.vue
-│       ├── router/index.js
-│       └── views/                         # 页面组件
-│
-├── ai-service/           # Python FastAPI AI 微服务
+├── ai-service/                      # Python FastAPI AI 微服务
 │   ├── requirements.txt
 │   └── app/
-│       ├── main.py
-│       └── routers/
-│           ├── analyze.py                 # AI 分析和 LLM 调用
-│           ├── scraper.py                 # 数据/新闻抓取接口
-│           └── config.py                  # AI 配置接口
-│
-├── docker/               # Docker 初始化脚本
-├── docker-compose.yml    # PostgreSQL + 后端 + AI 服务 + 前端一键启动
-├── requirements-sync.txt # 同步脚本在 Docker 内需要的 Python 依赖
-├── scripts / root *.py   # 同步、爬虫、修复、测试脚本（开发期工具）
-├── .env.example          # 环境变量示例，不要填写真实密钥后提交
-├── .gitignore            # GitHub 上传忽略规则
-├── requirements.md       # 原始需求文档
+├── docker/                          # Docker 初始化脚本
+├── docker-compose.yml               # PostgreSQL + 后端 + AI 服务 + 前端一键启动
+├── requirements-sync.txt            # 同步脚本在 Docker 内需要的 Python 依赖
+├── .env.example                     # 环境变量示例，不要填写真实密钥后提交
+├── .github/workflows/ci.yml         # GitHub Actions 构建检查
 └── README.md
 ```
 
 ## Docker Compose 一键启动
 
-项目根目录已提供 `docker-compose.yml`，面试官 clone 后可以直接一键启动 PostgreSQL、Spring Boot 后端、FastAPI AI 服务和 Vue 前端。
-
-### 最短启动
+项目根目录已提供 `docker-compose.yml`，clone 后可以一次启动 PostgreSQL、Spring Boot 后端、FastAPI AI 服务和 Vue 前端。
 
 ```bash
 docker compose up -d
 ```
 
-首次启动如果本地没有镜像，Docker Compose 会按各模块 Dockerfile 自动构建。需要强制重建时再执行：
+首次启动如果本地没有镜像，Docker Compose 会按各模块 Dockerfile 自动构建。需要强制重建时执行：
 
 ```bash
 docker compose up -d --build
@@ -96,6 +84,7 @@ backend:    http://localhost:8080
 ai-service: http://localhost:8082
 postgres:   localhost:5432 / hk_stock
 Swagger:    http://localhost:8080/swagger-ui.html
+Health:     http://localhost:8080/api/health
 ```
 
 ### 可选：准备本地环境变量
@@ -118,7 +107,7 @@ FUTU_OPEND_PORT=11111
 
 ## 接口文档
 
-后端集成了 Swagger / OpenAPI UI，启动后访问：
+后端集成 Swagger / OpenAPI UI，启动后访问：
 
 ```text
 http://localhost:8080/swagger-ui.html
@@ -150,21 +139,12 @@ docker compose down -v
 
 ### 1. 准备 PostgreSQL
 
-创建数据库：
-
 ```bash
 createdb -U postgres hk_stock
-```
-
-初始化表结构：
-
-```bash
 psql -U postgres -d hk_stock -f backend/src/main/resources/schema.sql
 ```
 
 ### 2. 配置环境变量
-
-复制示例文件：
 
 ```bash
 copy .env.example .env
@@ -181,19 +161,13 @@ PYTHON_EXECUTABLE=python
 APP_SCRIPT_ROOT=..
 ```
 
-> 注意：Spring Boot 不会自动读取根目录 `.env`。你可以在 IDEA 运行配置里填这些环境变量，或者直接在系统环境变量里配置。
+> Spring Boot 不会自动读取根目录 `.env`。可以在 IDEA 运行配置或系统环境变量里配置这些值。
 
 ### 3. 启动后端
 
 ```bash
 cd backend
 mvn spring-boot:run
-```
-
-后端默认地址：
-
-```text
-http://localhost:8080
 ```
 
 ### 4. 启动 AI 微服务
@@ -204,12 +178,6 @@ pip install -r requirements.txt
 uvicorn app.main:app --port 8082 --reload
 ```
 
-AI 微服务默认地址：
-
-```text
-http://localhost:8082
-```
-
 ### 5. 启动前端
 
 ```bash
@@ -218,31 +186,22 @@ npm install
 npm run dev
 ```
 
-前端默认地址：
-
-```text
-http://localhost:3000
-```
-
 ## 常用验证命令
 
-前端构建：
-
 ```bash
-cd frontend
-npm run build
-```
+# Docker Compose 配置检查
+docker compose config
 
-后端编译：
-
-```bash
+# 后端编译
 cd backend
 mvn -DskipTests compile
-```
 
-AI 微服务健康检查：
+# 前端构建
+cd frontend
+npm install
+npm run build
 
-```bash
+# AI 微服务健康检查
 curl http://localhost:8082/health
 ```
 
@@ -251,12 +210,15 @@ curl http://localhost:8082/health
 - 新股页面：`frontend/src/views/IPO.vue`
 - 新股接口：`backend/src/main/java/com/hkstock/controller/IpoController.java`
 - 新股业务：`backend/src/main/java/com/hkstock/service/IpoService.java`
-- AI 配置服务：`backend/src/main/java/com/hkstock/service/ConfigService.java`
+- 统一响应：`backend/src/main/java/com/hkstock/common/ApiResponse.java`
+- 全局异常处理：`backend/src/main/java/com/hkstock/exception/GlobalExceptionHandler.java`
+- 健康检查：`backend/src/main/java/com/hkstock/controller/HealthController.java`
+- 缓存清理：`backend/src/main/java/com/hkstock/service/CacheInvalidationService.java`
 - 定时任务：`backend/src/main/java/com/hkstock/task/`
   - `IpoSyncTask.java`：IPO 基础数据同步
-  - `IpoMetricsSyncTask.java`：IPO 对比/板块/破发率指标同步
-  - `MarketOverviewSyncTask.java`：大盘概览同步
-  - `CalendarSyncTask.java`：财报/分红日历同步
+  - `IpoMetricsSyncTask.java`：IPO 对比 / 板块 / 破发率指标同步
+  - `MarketOverviewSyncTask.java`：大盘概览和股票列表同步
+  - `CalendarSyncTask.java`：财报 / 分红日历同步
   - `KlineSyncTask.java`：K 线数据同步
   - `PriceAlertTask.java`：价格预警检查
   - `PythonScriptRunner.java`：统一执行 Python 脚本、读取 stdout/stderr、处理超时和失败

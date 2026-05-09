@@ -1,9 +1,9 @@
 package com.hkstock.common;
 
 /**
- * 统一 API 响应结构。
+ * Unified API response wrapper.
  *
- * @param <T> 业务数据类型
+ * @param <T> business payload type
  */
 public class ApiResponse<T> {
 

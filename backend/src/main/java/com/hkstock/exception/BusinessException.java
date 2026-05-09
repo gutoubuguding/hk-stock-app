@@ -1,6 +1,6 @@
 package com.hkstock.exception;
 
-/** 业务校验异常，例如参数不合法、业务状态不允许等。 */
+/** Business validation exception, such as invalid parameters or forbidden business state. */
 public class BusinessException extends RuntimeException {
 
   private final Integer code;

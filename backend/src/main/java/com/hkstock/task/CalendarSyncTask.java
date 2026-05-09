@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** 财报/分红日历同步任务。 */
+/** Earnings and dividend calendar sync task. */
 @Component
 public class CalendarSyncTask {
 
@@ -20,13 +20,13 @@ public class CalendarSyncTask {
 
   @Scheduled(cron = "0 30 7 * * ?")
   public void syncCalendarMorning() {
-    log.info("【日历同步】早市同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    pythonScriptRunner.run(CALENDAR_SCRIPT, "日历同步-早市");
+    log.info("[Calendar sync] Morning sync started at {}", LocalDateTime.now().format(DF));
+    pythonScriptRunner.run(CALENDAR_SCRIPT, "Calendar morning sync");
   }
 
   @Scheduled(cron = "0 30 18 * * ?")
   public void syncCalendarEvening() {
-    log.info("【日历同步】晚市同步开始 (时间: {})", LocalDateTime.now().format(DF));
-    pythonScriptRunner.run(CALENDAR_SCRIPT, "日历同步-晚市");
+    log.info("[Calendar sync] Evening sync started at {}", LocalDateTime.now().format(DF));
+    pythonScriptRunner.run(CALENDAR_SCRIPT, "Calendar evening sync");
   }
 }

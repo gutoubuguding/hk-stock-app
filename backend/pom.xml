@@ -12,10 +12,10 @@
     </parent>
 
     <groupId>com.hkstock</groupId>
-    <artifactId>hk-stock-app</artifactId>
+    <artifactId>hk-stock-intelligence-platform</artifactId>
     <version>1.0.0</version>
-    <name>hk-stock-app</name>
-    <description>港股分析应用</description>
+    <name>HK Stock Intelligence Platform</name>
+    <description>港股智能分析平台</description>
 
     <properties>
         <java.version>17</java.version>
