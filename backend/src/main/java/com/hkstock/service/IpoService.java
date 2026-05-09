@@ -10,7 +10,10 @@ import com.hkstock.exception.DataSyncException;
 import com.hkstock.mapper.StockIpoMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +31,10 @@ public class IpoService {
 
   private static final Logger log = LoggerFactory.getLogger(IpoService.class);
   private static final Pattern HK_STOCK_CODE_PATTERN = Pattern.compile("^(HK\\.)?\\d{5}$");
-  /** 板块样本数太少时，均值/破发率容易被单只股票扭曲，前端展示也会非常杂乱。 默认只展示最近一年内至少 3 只新股的板块，少于 3 只的板块仍计入汇总元数据。 */
+  /**
+   * 板块样本数太少时，均值/破发率容易被单只股票扭曲，前端展示也会非常杂乱。
+   * 默认只展示最近一年内至少 3 只新股的板块，少于 3 只的板块仍计入汇总元数据。
+   */
   private static final int MIN_SECTOR_SAMPLE_SIZE = 3;
 
   private @Autowired StockIpoMapper ipoMapper;

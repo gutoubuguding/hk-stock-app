@@ -93,12 +93,24 @@
               <span v-else class="empty-cell">--</span>
             </template>
           </el-table-column>
-          <el-table-column prop="allotmentRate" label="中签率%" width="95" sortable />
-          <el-table-column prop="oversubscriptionRatio" label="超购倍数" width="100" sortable />
-          <el-table-column prop="publicOfferingRatio" label="公开发售%" width="110" />
-          <el-table-column prop="internationalPlacementRatio" label="国际配售%" width="110" />
-          <el-table-column prop="entryFee" label="入场费" width="100" />
-          <el-table-column prop="fundraisingAmount" label="募资额" width="100" />
+          <el-table-column prop="allotmentRate" label="中签率%" width="95" sortable>
+            <template #default="{ row }">{{ formatNullable(row.allotmentRate, '%') }}</template>
+          </el-table-column>
+          <el-table-column prop="oversubscriptionRatio" label="超购倍数" width="100" sortable>
+            <template #default="{ row }">{{ formatNullable(row.oversubscriptionRatio, 'x') }}</template>
+          </el-table-column>
+          <el-table-column prop="publicOfferingRatio" label="公开发售%" width="110">
+            <template #default="{ row }">{{ formatNullable(row.publicOfferingRatio, '%') }}</template>
+          </el-table-column>
+          <el-table-column prop="internationalPlacementRatio" label="国际配售%" width="110">
+            <template #default="{ row }">{{ formatNullable(row.internationalPlacementRatio, '%') }}</template>
+          </el-table-column>
+          <el-table-column prop="entryFee" label="入场费" width="100">
+            <template #default="{ row }">{{ formatNullable(row.entryFee) }}</template>
+          </el-table-column>
+          <el-table-column prop="fundraisingAmount" label="募资额" width="100">
+            <template #default="{ row }">{{ formatNullable(row.fundraisingAmount) }}</template>
+          </el-table-column>
           <el-table-column prop="sector" label="板块" width="120" />
           <el-table-column prop="sponsor" label="保荐人" width="150" />
           <el-table-column prop="cornerstoneInvestor" label="基石投资者" width="150" />
@@ -387,6 +399,7 @@ onMounted(async () => {
 })
 
 const unwrapApiResponse = (res) => res.data?.data ?? res.data
+const formatNullable = (value, suffix = '') => value == null || value === '' ? '待公布' : `${value}${suffix}`
 
 const loadUpcoming = async () => {
   loadingUpcoming.value = true
