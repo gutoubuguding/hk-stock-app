@@ -56,6 +56,8 @@ class IpoServiceTest {
     Map<String, Object> result = ipoService.getIpoComparison("notExists", "asc");
 
     assertThat(result).containsEntry("total", 0);
+    assertThat(ipoService.resolveIpoComparisonSortBy("notExists")).isEqualTo("listingDate");
+    assertThat(ipoService.resolveIpoComparisonSortAsc("notExists", "asc")).isFalse();
     verify(ipoMapper).selectList(any());
   }
 }

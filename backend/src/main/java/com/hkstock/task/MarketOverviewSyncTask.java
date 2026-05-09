@@ -1,14 +1,12 @@
 package com.hkstock.task;
 
-import com.hkstock.config.CacheConfig;
+import com.hkstock.service.CacheInvalidationService;
 import com.hkstock.service.StockService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -22,12 +20,13 @@ public class MarketOverviewSyncTask {
 
   private @Autowired PythonScriptRunner pythonScriptRunner;
   private @Autowired StockService stockService;
-  private @Autowired CacheManager cacheManager;
+  private @Autowired CacheInvalidationService cacheInvalidationService;
 
   @Scheduled(cron = "0 0 9 * * ?")
   public void updateStockList() {
     log.info("【股票列表】开始更新");
     stockService.refreshStockList();
+    cacheInvalidationService.evictStockListCaches();
     log.info("【股票列表】更新完成");
   }
 
@@ -35,20 +34,13 @@ public class MarketOverviewSyncTask {
   public void syncMarketOverviewIntraday() {
     log.info("【大盘概览】盘中同步开始 (时间: {})", LocalDateTime.now().format(DF));
     pythonScriptRunner.run(MARKET_OVERVIEW_SCRIPT, "大盘概览-盘中");
-    clear(CacheConfig.MARKET_OVERVIEW);
+    cacheInvalidationService.evictMarketOverviewCaches();
   }
 
   @Scheduled(cron = "0 10 17 * * MON-FRI")
   public void syncMarketOverviewClose() {
     log.info("【大盘概览】收盘后同步开始 (时间: {})", LocalDateTime.now().format(DF));
     pythonScriptRunner.run(MARKET_OVERVIEW_SCRIPT, "大盘概览-收盘");
-    clear(CacheConfig.MARKET_OVERVIEW);
-  }
-
-  private void clear(String cacheName) {
-    Cache cache = cacheManager.getCache(cacheName);
-    if (cache != null) {
-      cache.clear();
-    }
+    cacheInvalidationService.evictMarketOverviewCaches();
   }
 }

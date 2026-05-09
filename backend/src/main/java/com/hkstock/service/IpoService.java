@@ -56,11 +56,12 @@ public class IpoService {
     LambdaQueryWrapper<StockIpo> wrapper = new LambdaQueryWrapper<>();
     wrapper.ge(StockIpo::getListingDate, oneYearAgo);
 
-    if (sortBy != null && !sortBy.isEmpty()) {
-      boolean isAsc = "asc".equalsIgnoreCase(sortOrder);
-      wrapper.orderBy(true, isAsc, getSortField(sortBy));
+    String resolvedSortBy = resolveIpoComparisonSortBy(sortBy);
+    boolean isAsc = resolveIpoComparisonSortAsc(sortBy, sortOrder);
+    if (isAsc) {
+      wrapper.orderByAsc(getSortField(resolvedSortBy));
     } else {
-      wrapper.orderByDesc(StockIpo::getListingDate);
+      wrapper.orderByDesc(getSortField(resolvedSortBy));
     }
 
     List<StockIpo> list = ipoMapper.selectList(wrapper);
@@ -192,7 +193,7 @@ public class IpoService {
 
     // 从配置服务获取 API Key / Base URL / Model。
     // 注意：业务层不要依赖 ConfigController，否则会让 Service 反向依赖接口层。
-    Map<String, Object> config = configService.getCurrent();
+    Map<String, Object> config = configService.getRequiredAiConfig();
     String apiKey = (String) config.getOrDefault("ai_api_key", "");
     String baseUrl = (String) config.getOrDefault("ai_base_url", "");
     String model = (String) config.getOrDefault("ai_model", "");
@@ -225,6 +226,22 @@ public class IpoService {
   private String normalizeStockCode(String stockCode) {
     String normalized = stockCode.trim();
     return normalized.startsWith("HK.") ? normalized.substring(3) : normalized;
+  }
+
+  String resolveIpoComparisonSortBy(String sortBy) {
+    return isSupportedSortBy(sortBy) ? sortBy : "listingDate";
+  }
+
+  boolean resolveIpoComparisonSortAsc(String sortBy, String sortOrder) {
+    return isSupportedSortBy(sortBy) && "asc".equalsIgnoreCase(sortOrder);
+  }
+
+  private boolean isSupportedSortBy(String sortBy) {
+    return switch (sortBy == null ? "" : sortBy) {
+      case "listingDate", "allotmentRate", "firstDayChange", "sevenDayChange", "thirtyDayChange" ->
+          true;
+      default -> false;
+    };
   }
 
   /** 刷新新股数据（定时任务调用） */

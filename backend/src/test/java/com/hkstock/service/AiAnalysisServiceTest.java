@@ -41,7 +41,7 @@ class AiAnalysisServiceTest {
   @Test
   void getAiAnalysisReturnsFriendlyErrorWhenAiServiceTimeouts() {
     when(ipoMapper.selectOne(any())).thenReturn(null);
-    when(configService.getCurrent())
+    when(configService.getRequiredAiConfig())
         .thenReturn(
             Map.of(
                 "ai_api_key", "test-key",

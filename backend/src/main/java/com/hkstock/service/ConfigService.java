@@ -1,5 +1,6 @@
 package com.hkstock.service;
 
+import com.hkstock.exception.AiServiceException;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -63,6 +64,24 @@ public class ConfigService implements InitializingBean {
   /** 返回当前配置副本，避免外部代码直接修改内部缓存。 */
   public Map<String, Object> getCurrent() {
     return new HashMap<>(configStore);
+  }
+
+  /** 获取可用于 AI 调用的配置；缺少关键配置时给出面向用户的友好错误。 */
+  public Map<String, Object> getRequiredAiConfig() {
+    Map<String, Object> current = getCurrent();
+    String apiKey = String.valueOf(current.getOrDefault("ai_api_key", ""));
+    String baseUrl = String.valueOf(current.getOrDefault("ai_base_url", ""));
+    String model = String.valueOf(current.getOrDefault("ai_model", ""));
+    if (apiKey.isBlank()) {
+      throw new AiServiceException("请先在设置页填写 AI API Key");
+    }
+    if (baseUrl.isBlank()) {
+      throw new AiServiceException("请先在设置页填写 AI API 地址");
+    }
+    if (model.isBlank()) {
+      throw new AiServiceException("请先在设置页选择 AI 模型");
+    }
+    return current;
   }
 
   /** 更新并持久化 AI 模型配置。 body 来自设置页表单；api_key 允许为空字符串，因为用户可能想清空旧 Key。 */
