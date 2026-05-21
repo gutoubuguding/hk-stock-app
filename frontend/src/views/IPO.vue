@@ -93,8 +93,30 @@
               <span v-else class="empty-cell">--</span>
             </template>
           </el-table-column>
-          <el-table-column prop="allotmentRate" label="中签率%" width="95" sortable>
-            <template #default="{ row }">{{ formatNullable(row.allotmentRate, '%') }}</template>
+          <el-table-column prop="allotmentRate" width="125" sortable :sort-method="sortBySelectedAllotmentRate">
+            <template #header>
+              <el-popover placement="bottom" trigger="click" width="220">
+                <template #reference>
+                  <button class="header-filter-button" @click.stop>
+                    中签率{{ selectedAllotmentLots }}手%
+                    <span class="header-filter-caret">▾</span>
+                  </button>
+                </template>
+                <div class="lot-selector" @click.stop>
+                  <div class="lot-selector-title">选择申购手数</div>
+                  <el-select v-model="selectedAllotmentLots" size="small" style="width: 100%">
+                    <el-option
+                      v-for="lots in allotmentLotOptions"
+                      :key="lots"
+                      :label="`${lots}手`"
+                      :value="lots"
+                    />
+                  </el-select>
+                  <div class="lot-selector-tip">使用 HKEX 配发结果 PDF 里的真实阶梯数据，不做估算</div>
+                </div>
+              </el-popover>
+            </template>
+            <template #default="{ row }">{{ formatAllotmentRate(row) }}</template>
           </el-table-column>
           <el-table-column prop="oversubscriptionRatio" label="超购倍数" width="100" sortable>
             <template #default="{ row }">{{ formatNullable(row.oversubscriptionRatio, 'x') }}</template>
@@ -309,6 +331,54 @@
                   </ul>
                 </div>
               </section>
+
+              <section class="analysis-section">
+                <h5>公司业务分析</h5>
+                <p>{{ ipoStructuredAnalysis.businessAnalysis || '暂无业务分析' }}</p>
+              </section>
+
+              <section class="analysis-section">
+                <h5>详细新闻解读</h5>
+                <div v-if="(ipoStructuredAnalysis.newsAnalysis || []).length" class="news-analysis-list">
+                  <article v-for="(item, index) in ipoStructuredAnalysis.newsAnalysis" :key="'news-analysis-' + index" class="news-analysis-item">
+                    <div class="news-analysis-title">
+                      <span>{{ index + 1 }}. {{ item.title || '相关新闻' }}</span>
+                      <el-tag size="small" :type="newsImpactTagType(item.impact)">{{ item.impact || '中性' }}</el-tag>
+                    </div>
+                    <p>{{ item.viewpoint || item.analysis || '暂无解读' }}</p>
+                  </article>
+                </div>
+                <div v-else class="empty-mini">暂无逐条新闻解读</div>
+              </section>
+
+              <section class="analysis-section two-cols detail-grid">
+                <div>
+                  <h5>招股热度分析</h5>
+                  <p>{{ ipoStructuredAnalysis.ipoHeatAnalysis || '暂无招股热度分析' }}</p>
+                </div>
+                <div>
+                  <h5>估值分析</h5>
+                  <p>{{ ipoStructuredAnalysis.valuationAnalysis || '暂无估值分析' }}</p>
+                </div>
+                <div>
+                  <h5>行业前景</h5>
+                  <p>{{ ipoStructuredAnalysis.industryOutlook || '暂无行业前景分析' }}</p>
+                </div>
+                <div>
+                  <h5>上市走势预测</h5>
+                  <p>{{ ipoStructuredAnalysis.listingForecast || '暂无上市走势预测' }}</p>
+                </div>
+              </section>
+
+              <section class="analysis-section">
+                <h5>申购建议理由</h5>
+                <p>{{ ipoStructuredAnalysis.subscriptionAdvice || '暂无申购建议理由' }}</p>
+              </section>
+
+              <section class="analysis-section">
+                <h5>适合人群</h5>
+                <p>{{ ipoStructuredAnalysis.suitableInvestors || '暂无适合人群分析' }}</p>
+              </section>
             </div>
             <pre v-else>{{ ipoAnalysis }}</pre>
           </div>
@@ -364,7 +434,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
@@ -390,6 +460,15 @@ const selectedIpo = ref(null)
 const sectorDialogVisible = ref(false)
 const selectedSector = ref('')
 const sectorIpos = ref([])
+const selectedAllotmentLots = ref(1)
+const fallbackAllotmentLotOptions = [1]
+const allotmentLotOptions = computed(() => {
+  const lots = new Set(fallbackAllotmentLotOptions)
+  comparisonData.value.forEach(row => {
+    Object.keys(parseAllotmentRateTiers(row?.allotmentRateTiers)).forEach(lot => lots.add(Number(lot)))
+  })
+  return Array.from(lots).filter(Number.isFinite).sort((a, b) => a - b)
+})
 
 onMounted(async () => {
   await loadUpcoming()
@@ -400,6 +479,44 @@ onMounted(async () => {
 
 const unwrapApiResponse = (res) => res.data?.data ?? res.data
 const formatNullable = (value, suffix = '') => value == null || value === '' ? '待公布' : `${value}${suffix}`
+
+const parseAllotmentRateTiers = (tiers) => {
+  if (!tiers) return {}
+  if (typeof tiers === 'object') return tiers
+  try {
+    return JSON.parse(tiers)
+  } catch (e) {
+    return {}
+  }
+}
+
+const getSelectedAllotmentRate = (row) => {
+  const lots = String(selectedAllotmentLots.value || 1)
+  const tiers = parseAllotmentRateTiers(row?.allotmentRateTiers)
+  const tierRate = Number(tiers[lots])
+  if (Number.isFinite(tierRate)) return tierRate
+
+  // 只在选择 1 手时使用原 allotmentRate 兜底；其它手数必须来自 PDF 真实阶梯表，不做估算。
+  if (lots === '1') {
+    const baseRate = Number(row?.allotmentRate)
+    if (Number.isFinite(baseRate)) return baseRate
+  }
+  return null
+}
+
+const formatAllotmentRate = (row) => {
+  const rate = getSelectedAllotmentRate(row)
+  return rate == null ? '待公布' : `${rate}%`
+}
+
+const sortBySelectedAllotmentRate = (a, b) => {
+  const rateA = getSelectedAllotmentRate(a)
+  const rateB = getSelectedAllotmentRate(b)
+  if (rateA == null && rateB == null) return 0
+  if (rateA == null) return -1
+  if (rateB == null) return 1
+  return rateA - rateB
+}
 
 const loadUpcoming = async () => {
   loadingUpcoming.value = true
@@ -476,13 +593,24 @@ const formatStructuredAnalysis = (analysis) => {
   if (!analysis) return ''
   const advantages = (analysis.advantages || []).map(item => `- ${item}`).join('\n') || '- 暂无'
   const risks = (analysis.risks || []).map(item => `- ${item}`).join('\n') || '- 暂无'
+  const newsAnalysis = (analysis.newsAnalysis || [])
+    .map((item, index) => `${index + 1}. ${item.title || '相关新闻'}（${item.impact || '中性'}）\n${item.viewpoint || item.analysis || '暂无解读'}`)
+    .join('\n\n') || '暂无逐条新闻解读'
   return [
     `AI 综合评级：${analysis.suggestion || '--'}`,
     `风险等级：${analysis.riskLevel || '未知'}`,
     `AI 置信度：${confidencePercent(analysis.confidence)}%`,
     `整体评价：${analysis.summary || '--'}`,
     `核心优势：\n${advantages}`,
-    `主要风险：\n${risks}`
+    `主要风险：\n${risks}`,
+    `公司业务分析：\n${analysis.businessAnalysis || '暂无业务分析'}`,
+    `详细新闻解读：\n${newsAnalysis}`,
+    `招股热度分析：\n${analysis.ipoHeatAnalysis || '暂无招股热度分析'}`,
+    `估值分析：\n${analysis.valuationAnalysis || '暂无估值分析'}`,
+    `行业前景：\n${analysis.industryOutlook || '暂无行业前景分析'}`,
+    `上市走势预测：\n${analysis.listingForecast || '暂无上市走势预测'}`,
+    `申购建议理由：\n${analysis.subscriptionAdvice || '暂无申购建议理由'}`,
+    `适合人群：\n${analysis.suitableInvestors || '暂无适合人群分析'}`
   ].join('\n\n')
 }
 
@@ -496,6 +624,12 @@ const riskTagType = (riskLevel) => {
   if (['高', '中高'].includes(riskLevel)) return 'danger'
   if (['中', '中低'].includes(riskLevel)) return 'warning'
   if (riskLevel === '低') return 'success'
+  return 'info'
+}
+
+const newsImpactTagType = (impact) => {
+  if (impact === '利好') return 'success'
+  if (impact === '利空') return 'danger'
   return 'info'
 }
 
@@ -567,6 +701,41 @@ const onSectorClick = async (row) => {
   padding: 14px;
   border-radius: 16px;
   background: #f7f9fd;
+}
+
+.header-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.header-filter-button:hover {
+  color: var(--primary);
+}
+
+.header-filter-caret {
+  font-size: 12px;
+  color: #909399;
+}
+
+.lot-selector-title {
+  margin-bottom: 10px;
+  font-weight: 700;
+  color: #1f2f4d;
+}
+
+.lot-selector-tip {
+  margin-top: 8px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .up { color: #f56c6c; }
@@ -942,6 +1111,34 @@ const onSectorClick = async (row) => {
   margin: 0;
   padding-left: 18px;
   line-height: 1.8;
+}
+
+.news-analysis-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.news-analysis-item {
+  padding: 14px 16px;
+  border: 1px solid #edf1f7;
+  border-radius: 14px;
+  background: #fbfcff;
+}
+
+.news-analysis-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: #12223f;
+  font-weight: 800;
+}
+
+.news-analysis-item p,
+.detail-grid p {
+  color: #344563;
 }
 
 .two-cols {

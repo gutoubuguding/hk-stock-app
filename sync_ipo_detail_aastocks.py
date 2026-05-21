@@ -6,6 +6,7 @@ Futu IPO 列表有时只给入场费/上市日期，不给发行价；近一年�
 """
 import datetime as dt
 import io
+import json
 import os
 os.environ['NO_PROXY'] = '*'
 
@@ -179,6 +180,48 @@ def fetch_hkex_allotment_announcements(days=370):
     return announcements
 
 
+def extract_allotment_rate_tiers(text):
+    """解析 HKEX 配发结果 PDF 的公开发售 Pool A 阶梯中签/获配比例。
+
+    返回格式：{"1": 0.33, "2": 0.33, "10": 0.32}，key 为申购手数。
+    只取 Pool A（散户公开发售小额池），不用任何估算公式。
+    """
+    pool_match = re.search(r'POOL\s+A\s*(.*?)(?:Total\s+[\d,]+\s+Total number of Pool A|POOL\s+B)', text, re.I | re.S)
+    if not pool_match:
+        return {}
+
+    pool_text = pool_match.group(1)
+    row_matches = re.findall(
+        r'(?m)^\s*([\d,]+)\s+([\d,]+)\s+(.{0,220}?)(\d+(?:\.\d+)?)%',
+        pool_text,
+    )
+    if not row_matches:
+        return {}
+
+    applied_shares = []
+    for shares_text, _applications, _basis, rate_text in row_matches:
+        shares = parse_num(shares_text)
+        rate = parse_num(rate_text)
+        if shares is None or rate is None:
+            continue
+        applied_shares.append((int(shares), rate))
+
+    if not applied_shares:
+        return {}
+
+    lot_size = min(shares for shares, _rate in applied_shares)
+    if lot_size <= 0:
+        return {}
+
+    tiers = {}
+    for shares, rate in applied_shares:
+        if shares % lot_size != 0:
+            continue
+        lots = shares // lot_size
+        tiers[str(lots)] = rate
+    return tiers
+
+
 def extract_hkex_allotment_pdf(pdf_url):
     if PdfReader is None:
         return {}
@@ -201,15 +244,22 @@ def extract_hkex_allotment_pdf(pdf_url):
         text,
         re.I | re.S,
     )
-    if basis_match:
-        data['allotment_rate'] = parse_num(basis_match.group(5))
-    else:
-        # 兼容少数 PDF 抽文本换行不同的情况：取 BASIS OF ALLOCATION 后第一条百分比。
-        section_match = re.search(r'BASIS\s+OF\s+ALLOCATION\s+UNDER\s+THE\s+HONG\s+KONG\s+PUBLIC\s+OFFERING(.{0,4000})', text, re.I | re.S)
-        if section_match:
-            percent_match = re.search(r'(\d+(?:\.\d+)?)%', section_match.group(1))
-            if percent_match:
-                data['allotment_rate'] = parse_num(percent_match.group(1))
+    rate_tiers = extract_allotment_rate_tiers(text)
+    if rate_tiers:
+        ordered_tiers = dict(sorted(rate_tiers.items(), key=lambda item: int(item[0])))
+        data['allotment_rate_tiers'] = json.dumps(ordered_tiers, ensure_ascii=False)
+        data['allotment_rate'] = rate_tiers.get('1')
+
+    if data.get('allotment_rate') is None:
+        if basis_match:
+            data['allotment_rate'] = parse_num(basis_match.group(5))
+        else:
+            # 兼容少数 PDF 抽文本换行不同的情况：取 BASIS OF ALLOCATION 后第一条百分比。
+            section_match = re.search(r'BASIS\s+OF\s+ALLOCATION\s+UNDER\s+THE\s+HONG\s+KONG\s+PUBLIC\s+OFFERING(.{0,4000})', text, re.I | re.S)
+            if section_match:
+                percent_match = re.search(r'(\d+(?:\.\d+)?)%', section_match.group(1))
+                if percent_match:
+                    data['allotment_rate'] = parse_num(percent_match.group(1))
 
     gross_match = re.search(r'Gross\s+proceeds.*?HK\$\s*([\d,]+(?:\.\d+)?)\s*(million|billion)?', text, re.I | re.S)
     if gross_match:
@@ -308,6 +358,7 @@ def update_db(cur, code, data):
         'oversubscription_ratio': 'oversubscription_ratio',
         'allotment_rate': 'allotment_rate',
         'fundraising_amount': 'fundraising_amount',
+        'allotment_rate_tiers': 'allotment_rate_tiers',
     }
     for src, dst in mapping.items():
         value = data.get(src)
@@ -327,9 +378,17 @@ def update_db(cur, code, data):
     return cur.rowcount > 0
 
 
+def ensure_schema(cur):
+    cur.execute("""
+        ALTER TABLE stock_ipo
+        ADD COLUMN IF NOT EXISTS allotment_rate_tiers TEXT
+    """)
+
+
 def main():
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
+    ensure_schema(cur)
     cur.execute("""
         SELECT stock_code, stock_name
         FROM stock_ipo
@@ -337,7 +396,8 @@ def main():
           AND (
               issue_price IS NULL OR lot_size IS NULL OR sponsor IS NULL OR sector IS NULL
               OR public_offering_ratio IS NULL OR international_placement_ratio IS NULL
-              OR oversubscription_ratio IS NULL OR allotment_rate IS NULL OR fundraising_amount IS NULL
+              OR oversubscription_ratio IS NULL OR allotment_rate IS NULL OR allotment_rate_tiers IS NULL
+              OR fundraising_amount IS NULL
           )
         ORDER BY listing_date DESC
     """)
@@ -363,7 +423,8 @@ def main():
             print(
                 f"  -> 更新: 发行价={data.get('issue_price')}, 每手={data.get('lot_size')}, "
                 f"公开发售={data.get('public_offering_ratio')}, 国际配售={data.get('international_placement_ratio')}, "
-                f"超购={data.get('oversubscription_ratio')}, 中签率={data.get('allotment_rate')}"
+                f"超购={data.get('oversubscription_ratio')}, 中签率={data.get('allotment_rate')}, "
+                f"阶梯={len(json.loads(data.get('allotment_rate_tiers', '{}')))}档"
             )
         else:
             print('  -> 未获取到可更新详情')

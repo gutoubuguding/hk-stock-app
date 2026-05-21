@@ -48,6 +48,9 @@ public class StockIpo {
   /** 认购中签率 (%) */
   private BigDecimal allotmentRate;
 
+  /** 各申购手数对应的真实中签/获配比例 JSON，例如 {"1":0.33,"10":0.32} */
+  private String allotmentRateTiers;
+
   /** 公开发售倍数（超购倍数） */
   private BigDecimal oversubscriptionRatio;
 
@@ -194,6 +197,14 @@ public class StockIpo {
 
   public void setAllotmentRate(BigDecimal allotmentRate) {
     this.allotmentRate = allotmentRate;
+  }
+
+  public String getAllotmentRateTiers() {
+    return allotmentRateTiers;
+  }
+
+  public void setAllotmentRateTiers(String allotmentRateTiers) {
+    this.allotmentRateTiers = allotmentRateTiers;
   }
 
   public BigDecimal getOversubscriptionRatio() {

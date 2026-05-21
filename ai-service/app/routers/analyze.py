@@ -102,6 +102,14 @@ def parse_structured_json(raw: str) -> Dict[str, Any]:
         "risks": [],
         "suggestion": "暂无建议",
         "confidence": 0.0,
+        "businessAnalysis": "暂无业务分析",
+        "newsAnalysis": [],
+        "ipoHeatAnalysis": "暂无招股热度分析",
+        "valuationAnalysis": "暂无估值分析",
+        "industryOutlook": "暂无行业前景分析",
+        "listingForecast": "暂无上市走势预测",
+        "subscriptionAdvice": "暂无申购建议理由",
+        "suitableInvestors": "暂无适合人群分析",
     }
 
     if not raw:
@@ -138,6 +146,21 @@ def parse_structured_json(raw: str) -> Dict[str, Any]:
         confidence = confidence / 100
     confidence = max(0.0, min(confidence, 1.0))
 
+    def as_news_analysis(value):
+        if not isinstance(value, list):
+            return []
+        items = []
+        for item in value:
+            if isinstance(item, dict):
+                items.append({
+                    "title": str(item.get("title") or "相关新闻"),
+                    "viewpoint": str(item.get("viewpoint") or item.get("analysis") or "暂无解读"),
+                    "impact": str(item.get("impact") or "中性"),
+                })
+            elif isinstance(item, str) and item.strip():
+                items.append({"title": "相关新闻", "viewpoint": item.strip(), "impact": "中性"})
+        return items
+
     return {
         "summary": str(data.get("summary") or fallback["summary"]),
         "riskLevel": str(data.get("riskLevel") or fallback["riskLevel"]),
@@ -145,6 +168,14 @@ def parse_structured_json(raw: str) -> Dict[str, Any]:
         "risks": as_list(data.get("risks")),
         "suggestion": str(data.get("suggestion") or fallback["suggestion"]),
         "confidence": round(confidence, 2),
+        "businessAnalysis": str(data.get("businessAnalysis") or fallback["businessAnalysis"]),
+        "newsAnalysis": as_news_analysis(data.get("newsAnalysis")),
+        "ipoHeatAnalysis": str(data.get("ipoHeatAnalysis") or fallback["ipoHeatAnalysis"]),
+        "valuationAnalysis": str(data.get("valuationAnalysis") or fallback["valuationAnalysis"]),
+        "industryOutlook": str(data.get("industryOutlook") or fallback["industryOutlook"]),
+        "listingForecast": str(data.get("listingForecast") or fallback["listingForecast"]),
+        "subscriptionAdvice": str(data.get("subscriptionAdvice") or fallback["subscriptionAdvice"]),
+        "suitableInvestors": str(data.get("suitableInvestors") or fallback["suitableInvestors"]),
     }
 
 def infer_provider(base_url: str) -> str:
@@ -620,21 +651,34 @@ def analyze_ipo(
 
 请只返回严格 JSON，不要 Markdown，不要解释，不要代码块。字段必须完整：
 {{
-  "summary": "整体评价，80字以内",
+  "summary": "整体评价，120字以内，要点明结论和核心依据",
   "riskLevel": "低/中低/中/中高/高",
-  "advantages": ["核心优势1", "核心优势2"],
-  "risks": ["主要风险1", "主要风险2"],
+  "advantages": ["核心优势1", "核心优势2", "核心优势3"],
+  "risks": ["主要风险1", "主要风险2", "主要风险3"],
   "suggestion": "积极申购/谨慎申购/观望/回避/持有观察 等明确建议",
-  "confidence": 0.72
+  "confidence": 0.72,
+  "businessAnalysis": "公司主营业务、商业模式、客户/产品/技术壁垒，180-260字",
+  "newsAnalysis": [
+    {{"title": "新闻标题1", "viewpoint": "这条新闻说明了什么，对申购或上市表现有什么影响，80-140字", "impact": "利好/中性/利空"}},
+    {{"title": "新闻标题2", "viewpoint": "逐条解读，不能只复述标题", "impact": "利好/中性/利空"}}
+  ],
+  "ipoHeatAnalysis": "结合招股倍数、超购、市场情绪和资金热度分析，160-240字；没有具体数据时说明数据缺口",
+  "valuationAnalysis": "结合发行价、行业可比公司、成长性或盈利质量评价估值是否合理，160-240字；没有估值数据时说明无法精确判断",
+  "industryOutlook": "行业空间、政策/周期/竞争格局分析，160-240字",
+  "listingForecast": "上市首日和短期走势预测，分别说明乐观/中性/悲观情形，160-240字",
+  "subscriptionAdvice": "给出申购/交易建议的详细理由，适合什么策略，180-260字",
+  "suitableInvestors": "适合的人群和不适合的人群，100-180字"
 }}
 
 要求：
-1. advantages 和 risks 各给 2-4 条，必须结合新闻和港股新股环境。
-2. confidence 是 0 到 1 的小数。
-3. suggestion 必须简短明确，适合前端直接展示为 AI 综合评级。
+1. advantages 和 risks 各给 3-5 条，必须结合新闻和港股新股环境。
+2. newsAnalysis 必须逐条对应上方新闻，至少 3 条；不要只复述标题，要解释影响。
+3. 所有长文本都要具体、有依据，不能泛泛而谈。
+4. confidence 是 0 到 1 的小数。
+5. suggestion 必须简短明确，适合前端直接展示为 AI 综合评级。
 """
 
-    raw_analysis = call_llm(prompt, api_key, base_url, model, max_tokens=1600)
+    raw_analysis = call_llm(prompt, api_key, base_url, model, max_tokens=3600)
     structured_analysis = parse_structured_json(raw_analysis)
 
     actual_base_url = base_url if base_url else llm_config.get("base_url", "")

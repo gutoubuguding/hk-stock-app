@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS stock_ipo (
     entry_fee DECIMAL(20, 2),
     fundraising_amount DECIMAL(20, 2),
     allotment_rate DECIMAL(8, 4),
+    allotment_rate_tiers TEXT,
     oversubscription_ratio DECIMAL(12, 2),
     public_offering_ratio DECIMAL(8, 4),
     international_placement_ratio DECIMAL(8, 4),
