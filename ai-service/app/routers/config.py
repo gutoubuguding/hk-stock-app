@@ -49,6 +49,18 @@ LLM_TEMPLATES = {
         "model": "claude-3-opus-20240229",
         "base_url": "https://api.anthropic.com/v1/messages",
         "description": "Claude 3 Opus"
+    },
+    "xiaomi": {
+        "provider": "xiaomi",
+        "model": "mimo-v2-pro",
+        "base_url": "https://api.xiaomimimo.com/v1",
+        "description": "Xiaomi MiMo V2 Pro"
+    },
+    "xiaomi-v2.5": {
+        "provider": "xiaomi",
+        "model": "mimo-v2.5-pro",
+        "base_url": "https://api.xiaomimimo.com/v1",
+        "description": "Xiaomi MiMo V2.5 Pro"
     }
 }
 

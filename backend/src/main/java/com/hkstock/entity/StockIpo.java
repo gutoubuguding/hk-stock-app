@@ -92,6 +92,9 @@ public class StockIpo {
   /** 发行价 vs 现价涨跌幅 (%) */
   private BigDecimal currentChange;
 
+  /** HKEX 配发结果 PDF 链接 */
+  private String hkexPdfUrl;
+
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
@@ -309,6 +312,14 @@ public class StockIpo {
 
   public void setCurrentChange(BigDecimal currentChange) {
     this.currentChange = currentChange;
+  }
+
+  public String getHkexPdfUrl() {
+    return hkexPdfUrl;
+  }
+
+  public void setHkexPdfUrl(String hkexPdfUrl) {
+    this.hkexPdfUrl = hkexPdfUrl;
   }
 
   public LocalDateTime getCreatedAt() {

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """从 AASTOCKS 补全 IPO 发行价、每手股数、入场费、保荐人等详情。
 
-Futu IPO 列表有时只给入场费/上市日期，不给发行价；近一年新股对比的
+Futu IPO 列表有时只给入场费/上市日期，不给发行价；2025年以来新股对比的
 首日/7日/30日/现价涨跌都依赖发行价，所以指标同步前先跑一次详情补全。
 """
 import datetime as dt
@@ -88,17 +88,17 @@ def normalize_code(stock_code):
     return str(stock_code or '').strip().replace('.HK', '').zfill(5)
 
 
-def fetch_hkex_allotment_announcements(days=370):
+def fetch_hkex_allotment_announcements(start_date=None):
     """批量读取 HKEXnews Title Search 的 Allotment Results。
 
-    AASTOCKS 详情页的小表只给“最近几只”的中签率/超购倍数；HKEXnews 的
+    AASTOCKS 详情页的小表只给最近几只的中签率/超购倍数；HKEXnews 的
     Allotment Results 公告才是正式批量来源。按月切片查询，避免结果超过页面
     单次最多展示 100 条后被截断。
     """
     session = requests.Session()
     session.trust_env = False
     session.headers.update(HKEX_HEADERS)
-    start = dt.date.today() - dt.timedelta(days=days)
+    start = start_date or dt.date(2025, 1, 1)
     end = dt.date.today()
     announcements = {}
 
@@ -359,6 +359,7 @@ def update_db(cur, code, data):
         'allotment_rate': 'allotment_rate',
         'fundraising_amount': 'fundraising_amount',
         'allotment_rate_tiers': 'allotment_rate_tiers',
+        'hkex_pdf_url': 'hkex_pdf_url',
     }
     for src, dst in mapping.items():
         value = data.get(src)
@@ -383,6 +384,10 @@ def ensure_schema(cur):
         ALTER TABLE stock_ipo
         ADD COLUMN IF NOT EXISTS allotment_rate_tiers TEXT
     """)
+    cur.execute("""
+        ALTER TABLE stock_ipo
+        ADD COLUMN IF NOT EXISTS hkex_pdf_url TEXT
+    """)
 
 
 def main():
@@ -392,12 +397,12 @@ def main():
     cur.execute("""
         SELECT stock_code, stock_name
         FROM stock_ipo
-        WHERE listing_date >= CURRENT_DATE - INTERVAL '1 year'
+        WHERE listing_date >= '2025-01-01'
           AND (
               issue_price IS NULL OR lot_size IS NULL OR sponsor IS NULL OR sector IS NULL
               OR public_offering_ratio IS NULL OR international_placement_ratio IS NULL
               OR oversubscription_ratio IS NULL OR allotment_rate IS NULL OR allotment_rate_tiers IS NULL
-              OR fundraising_amount IS NULL
+              OR fundraising_amount IS NULL OR hkex_pdf_url IS NULL
           )
         ORDER BY listing_date DESC
     """)
@@ -417,6 +422,7 @@ def main():
             hkex_data = extract_hkex_allotment_pdf(announcement['file_link'])
             # HKEX正式公告优先覆盖 AASTOCKS 小表结果。
             data.update({key: value for key, value in hkex_data.items() if value is not None})
+            data['hkex_pdf_url'] = announcement['file_link']
 
         if data and update_db(cur, code, data):
             updated += 1

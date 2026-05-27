@@ -37,7 +37,7 @@
       </el-tab-pane>
 
       <!-- 新股对比表格 -->
-      <el-tab-pane label="近一年新股对比" name="comparison">
+      <el-tab-pane label="2025年以来新股对比" name="comparison">
         <div class="table-toolbar">
           <el-select v-model="sortBy" placeholder="排序字段" @change="loadComparison">
             <el-option label="上市时间" value="listingDate" />
@@ -116,7 +116,10 @@
                 </div>
               </el-popover>
             </template>
-            <template #default="{ row }">{{ formatAllotmentRate(row) }}</template>
+            <template #default="{ row }">
+              <span>{{ formatAllotmentRate(row) }}</span>
+              <a v-if="row.hkexPdfUrl" :href="row.hkexPdfUrl" target="_blank" class="pdf-link" @click.stop title="查看 HKEX 配发结果 PDF">PDF</a>
+            </template>
           </el-table-column>
           <el-table-column prop="oversubscriptionRatio" label="超购倍数" width="100" sortable>
             <template #default="{ row }">{{ formatNullable(row.oversubscriptionRatio, 'x') }}</template>
@@ -195,7 +198,7 @@
       <!-- 破发率 -->
       <el-tab-pane label="破发率统计" name="breakRate">
         <div v-if="breakRateData" class="break-rate">
-          <el-statistic title="近一年新股总数" :value="breakRateData.total" />
+          <el-statistic title="2025年以来新股总数" :value="breakRateData.total" />
           <el-statistic title="破发数量" :value="breakRateData.brokenCount" />
           <el-statistic title="破发率" :value="breakRateData.breakRate" suffix="%" />
         </div>
@@ -736,6 +739,18 @@ const onSectorClick = async (row) => {
   color: #909399;
   font-size: 12px;
   line-height: 1.5;
+}
+
+.pdf-link {
+  margin-left: 4px;
+  font-size: 11px;
+  color: #409eff;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.pdf-link:hover {
+  text-decoration: underline;
 }
 
 .up { color: #f56c6c; }

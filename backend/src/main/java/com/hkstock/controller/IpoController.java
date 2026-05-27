@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
  *
  * <ul>
  *   <li>/upcoming：即将上市的新股列表；
- *   <li>/comparison：近一年新股表现对比表；
+ *   <li>/comparison：2025年以来新股表现对比表；
  *   <li>/sector-stats：按行业/板块聚合统计；
  *   <li>/break-rate：整体破发率；
  *   <li>/ai-analysis/{stockCode}：调用 Python AI 微服务生成单只新股分析报告。
@@ -34,7 +34,7 @@ public class IpoController {
   }
 
   /**
-   * 获取近一年上市新股横向对比表格。
+   * 获取2025年以来上市新股横向对比表格。
    *
    * @param sortBy 前端选择的排序字段，例如 listingDate / firstDayChange / sevenDayChange
    * @param sortOrder asc 或 desc，默认 desc

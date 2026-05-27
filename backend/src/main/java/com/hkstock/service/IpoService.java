@@ -33,9 +33,10 @@ public class IpoService {
   private static final Pattern HK_STOCK_CODE_PATTERN = Pattern.compile("^(HK\\.)?\\d{5}$");
   /**
    * 板块样本数太少时，均值/破发率容易被单只股票扭曲，前端展示也会非常杂乱。
-   * 默认只展示最近一年内至少 3 只新股的板块，少于 3 只的板块仍计入汇总元数据。
+   * 默认只展示2025年以来至少 3 只新股的板块，少于 3 只的板块仍计入汇总元数据。
    */
   private static final int MIN_SECTOR_SAMPLE_SIZE = 3;
+  private static final LocalDate COMPARISON_START_DATE = LocalDate.of(2025, 1, 1);
 
   private @Autowired StockIpoMapper ipoMapper;
   private @Autowired RestTemplate restTemplate;
@@ -53,12 +54,12 @@ public class IpoService {
     return ipoMapper.selectList(wrapper);
   }
 
-  /** 获取近一年新股横向对比 */
+  /** 获取2025年以来新股横向对比 */
   @Cacheable(
       value = CacheConfig.IPO_COMPARISON,
       key = "(#sortBy ?: 'listingDate') + ':' + (#sortOrder ?: 'desc')")
   public Map<String, Object> getIpoComparison(String sortBy, String sortOrder) {
-    LocalDate oneYearAgo = LocalDate.now().minusYears(1);
+    LocalDate oneYearAgo = COMPARISON_START_DATE;
     LambdaQueryWrapper<StockIpo> wrapper = new LambdaQueryWrapper<>();
     wrapper.ge(StockIpo::getListingDate, oneYearAgo);
 
@@ -80,7 +81,7 @@ public class IpoService {
   /** 新股板块统计 */
   @Cacheable(value = CacheConfig.IPO_SECTOR_STATS, key = "T(java.time.LocalDate).now().toString()")
   public Map<String, Object> getSectorStats() {
-    LocalDate oneYearAgo = LocalDate.now().minusYears(1);
+    LocalDate oneYearAgo = COMPARISON_START_DATE;
     LambdaQueryWrapper<StockIpo> wrapper = new LambdaQueryWrapper<>();
     wrapper.ge(StockIpo::getListingDate, oneYearAgo).isNotNull(StockIpo::getSector);
 
@@ -167,7 +168,7 @@ public class IpoService {
   /** 破发率统计 */
   @Cacheable(value = CacheConfig.IPO_BREAK_RATE, key = "T(java.time.LocalDate).now().toString()")
   public Map<String, Object> getBreakRate() {
-    LocalDate oneYearAgo = LocalDate.now().minusYears(1);
+    LocalDate oneYearAgo = COMPARISON_START_DATE;
     LambdaQueryWrapper<StockIpo> wrapper = new LambdaQueryWrapper<>();
     wrapper.ge(StockIpo::getListingDate, oneYearAgo);
 
@@ -332,7 +333,7 @@ public class IpoService {
       throw new BusinessException("板块名称不能为空");
     }
 
-    LocalDate oneYearAgo = LocalDate.now().minusYears(1);
+    LocalDate oneYearAgo = COMPARISON_START_DATE;
     LambdaQueryWrapper<StockIpo> wrapper = new LambdaQueryWrapper<>();
     wrapper
         .ge(StockIpo::getListingDate, oneYearAgo)

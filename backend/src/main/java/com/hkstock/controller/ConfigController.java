@@ -94,6 +94,13 @@ public class ConfigController {
     xiaomi.put("base_url", "https://api.xiaomimimo.com/v1");
     result.put("xiaomi", xiaomi);
 
+    Map<String, String> xiaomiV25 = new LinkedHashMap<>();
+    xiaomiV25.put("provider", "xiaomi");
+    xiaomiV25.put("model", "mimo-v2.5-pro");
+    xiaomiV25.put("description", "Xiaomi MiMo V2.5 Pro");
+    xiaomiV25.put("base_url", "https://api.xiaomimimo.com/v1");
+    result.put("xiaomi-v2.5", xiaomiV25);
+
     return Map.of("models", result);
   }
 
