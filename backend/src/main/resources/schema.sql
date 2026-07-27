@@ -73,6 +73,7 @@ CREATE TABLE stock_ipo (
     first_day_volume BIGINT,
     current_price DECIMAL(12, 4),
     lot_size INT,
+    hkex_pdf_url TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
