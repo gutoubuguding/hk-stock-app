@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.11-slim
+FROM python:3.12-slim
 WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -17,7 +17,7 @@ COPY requirements-sync.txt /app/scripts/requirements-sync.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt -r /app/scripts/requirements-sync.txt
 
 COPY ai-service/app /app/app
-COPY sync_daily_kline.py sync_ipo_futu.py sync_market_overview.py sync_calendar_aastocks.py sync_ipo_detail_aastocks.py sync_ipo_kline_metrics.py update_ipo_metrics.py /app/scripts/
+COPY scripts/sync/ /app/scripts/sync/
 
 EXPOSE 8082
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8082"]

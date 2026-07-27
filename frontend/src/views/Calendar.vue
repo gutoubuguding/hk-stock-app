@@ -94,7 +94,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'
+import request from '@/http/request'
 
 const router = useRouter()
 const activeTab = ref('financial')
@@ -102,13 +102,16 @@ const days = ref(60)
 const financialList = ref([])
 const dividendList = ref([])
 const loading = ref(false)
+let isLoading = false
 
 async function loadAll() {
+  if (isLoading) return
+  isLoading = true
   loading.value = true
   try {
     const [financialRes, dividendRes] = await Promise.all([
-      axios.get('/api/calendar/financial', { params: { days: days.value } }),
-      axios.get('/api/calendar/dividend', { params: { days: days.value } })
+      request({ url: '/calendar/financial', params: { days: days.value } }),
+      request({ url: '/calendar/dividend', params: { days: days.value } })
     ])
     financialList.value = financialRes.data || []
     dividendList.value = dividendRes.data || []
@@ -117,6 +120,7 @@ async function loadAll() {
     ElMessage.error('日历数据加载失败，请检查后端服务或同步任务')
   } finally {
     loading.value = false
+    isLoading = false
   }
 }
 

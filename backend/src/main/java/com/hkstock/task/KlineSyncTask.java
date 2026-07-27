@@ -15,7 +15,7 @@ public class KlineSyncTask {
 
   private static final Logger log = LoggerFactory.getLogger(KlineSyncTask.class);
   private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-  private static final String KLINE_SCRIPT = "sync_daily_kline.py";
+  private static final String KLINE_SCRIPT = "sync/sync_daily_kline.py";
 
   private @Autowired PythonScriptRunner pythonScriptRunner;
   private @Autowired CacheInvalidationService cacheInvalidationService;

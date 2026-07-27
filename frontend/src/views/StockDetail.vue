@@ -156,7 +156,7 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
+import request from '@/http/request'
 import * as echarts from 'echarts'
 
 const route = useRoute()
@@ -193,8 +193,10 @@ onMounted(async () => {
 
 const loadStockInfo = async () => {
   try {
-    const res = await axios.get('/api/stock/search', { params: { keyword: stockCode } })
-    if (res.data.length > 0) {
+    // 去掉 HK. 前缀再搜索
+    const searchCode = stockCode.replace(/^HK\./i, '')
+    const res = await request({ url: '/stock/search', params: { keyword: searchCode } })
+    if (res.data?.length > 0) {
       stockInfo.value = res.data[0]
     } else {
       await loadIpoFallbackInfo()
@@ -215,8 +217,8 @@ const loadIpoFallbackInfo = async () => {
     return
   }
   try {
-    const res = await axios.get('/api/ipo/comparison', { params: { sortBy: 'listingDate', sortOrder: 'desc' } })
-    const ipo = (res.data.data || []).find(item => item.stockCode === stockCode)
+    const res = await request({ url: '/ipo/comparison', params: { sortBy: 'listingDate', sortOrder: 'desc' } })
+    const ipo = (res.data || []).find(item => item.stockCode === stockCode)
     if (ipo) stockInfo.value = { stockCode: ipo.stockCode, stockName: ipo.stockName, isIpo: true }
   } catch (e) {
     console.error(e)
@@ -226,7 +228,7 @@ const loadIpoFallbackInfo = async () => {
 
 const loadDailyInfo = async () => {
   try {
-    const res = await axios.get('/api/stock/daily-info', { params: { stockCode } })
+    const res = await request({ url: '/stock/daily-info', params: { stockCode } })
     dailyInfo.value = res.data
   } catch (e) {
     console.error(e)
@@ -235,7 +237,7 @@ const loadDailyInfo = async () => {
 
 const loadValuation = async () => {
   try {
-    const res = await axios.get('/api/stock/valuation', { params: { stockCode } })
+    const res = await request({ url: '/stock/valuation', params: { stockCode } })
     valuation.value = res.data
   } catch (e) {
     console.error(e)
@@ -245,7 +247,8 @@ const loadValuation = async () => {
 const loadKline = async () => {
   try {
     const daysMap = { 'D': 120, '5D': 5, 'M': 36, 'Y': 10 }
-    const res = await axios.get('/api/stock/kline', {
+    const res = await request({
+      url: '/stock/kline',
       params: { stockCode, periodType: periodType.value, days: daysMap[periodType.value] || 120 }
     })
     klineData.value = res.data
@@ -338,8 +341,8 @@ const analyzeNews = async () => {
   analyzing.value = true
   try {
     // 从后端获取当前配置的API Key
-    const configRes = await axios.get('/api/config/current')
-    const config = configRes.data
+    const configRes = await request({ url: '/config/current' })
+    const config = configRes.data || {}
     
     // 等待stockInfo加载完成（双重保护）
     if (!stockInfo.value) {
@@ -351,12 +354,10 @@ const analyzeNews = async () => {
     
     let res
     if (isIpoDetail.value) {
-      // 从 IPO 列表进入的详情页，使用新股专用分析接口。
-      // 普通新闻接口对刚上市/未进入 stock_info 的新股容易查不到名称或走错分析逻辑。
-      res = await axios.get(`/api/ipo/ai-analysis/${currentStockCode}`)
+      res = await request({ url: `/ipo/ai-analysis/${currentStockCode}` })
     } else {
-      // 调用AI服务分析新闻 - 使用公司名称+股票代码双重搜索确保相关性
-      res = await axios.get('/api/analyze/stock-news', {
+      res = await request({
+        url: '/analyze/stock-news',
         params: {
           stock_code: currentStockCode,
           stock_name: currentStockName,
@@ -368,8 +369,8 @@ const analyzeNews = async () => {
       })
     }
 
-    newsAnalysis.value = res.data.analysis || '分析完成'
-    newsList.value = res.data.news || []
+    newsAnalysis.value = res.analysis || res.data?.analysis || '分析完成'
+    newsList.value = res.news || res.data?.news || []
   } catch (e) {
     newsAnalysis.value = '分析失败: ' + (e.response?.data?.detail || e.message)
   }
@@ -390,21 +391,25 @@ const sendChat = async () => {
   })
   
   try {
-    const configRes = await axios.get('/api/config/current')
-    const config = configRes.data
+    const configRes = await request({ url: '/config/current' })
+    const config = configRes.data || {}
     
-    const res = await axios.post('/api/analyze/stock-chat', {
-      stock_code: stockCode,
-      stock_name: stockInfo.value?.stockName || '',
-      news_context: newsList.value,
-      chat_history: chatMessages.value,
-      message: userMsg,
-      api_key: config.ai_api_key || '',
-      base_url: config.ai_base_url || '',
-      model: config.ai_model || ''
+    const res = await request({
+      url: '/analyze/stock-chat',
+      method: 'POST',
+      data: {
+        stock_code: stockCode,
+        stock_name: stockInfo.value?.stockName || '',
+        news_context: newsList.value,
+        chat_history: chatMessages.value,
+        message: userMsg,
+        api_key: config.ai_api_key || '',
+        base_url: config.ai_base_url || '',
+        model: config.ai_model || ''
+      }
     })
     
-    chatMessages.value.push({ role: 'assistant', content: res.data.reply || '无法获取回复' })
+    chatMessages.value.push({ role: 'assistant', content: res.reply || res.data?.reply || '无法获取回复' })
   } catch (e) {
     chatMessages.value.push({ role: 'assistant', content: 'AI调用失败: ' + (e.response?.data?.detail || e.message) })
   }
@@ -433,7 +438,8 @@ const compareRows = computed(() => {
 const compareStocks = async () => {
   if (!compareCodes.value.trim()) return
   try {
-    const res = await axios.get('/api/compare', {
+    const res = await request({
+      url: '/compare',
       params: { stockCodes: stockCode + ',' + compareCodes.value }
     })
     compareResult.value = res.data

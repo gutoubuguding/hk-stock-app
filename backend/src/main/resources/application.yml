@@ -16,6 +16,7 @@ spring:
 # MyBatis-Plus
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.hkstock.domain
   configuration:
     map-underscore-to-camel-case: true
     log-impl: ${MYBATIS_LOG_IMPL:org.apache.ibatis.logging.stdout.StdOutImpl}
@@ -38,3 +39,7 @@ app:
     root: ${APP_SCRIPT_ROOT:..}
   schedule:
     ipo-update-cron: ${IPO_UPDATE_CRON:0 0 8,20 * * ?}  # 每天8点和20点更新新股数据
+
+# JWT 配置
+salt: ${JWT_SALT:hkstock@2024}
+secret: ${JWT_SECRET:hkstock_jwt_secret_key_2024}

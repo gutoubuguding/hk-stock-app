@@ -1,57 +1,60 @@
 package com.hkstock.common;
 
+import lombok.Data;
+
 /**
- * Unified API response wrapper.
+ * 统一API响应包装类
  *
- * @param <T> business payload type
+ * @param <T> 业务数据类型
  */
+@Data
 public class ApiResponse<T> {
 
-  private Integer code;
-  private String message;
-  private T data;
+    private Integer code;
+    private String message;
+    private Long total;
+    private T data;
 
-  public ApiResponse() {}
+    public ApiResponse() {}
 
-  public ApiResponse(Integer code, String message, T data) {
-    this.code = code;
-    this.message = message;
-    this.data = data;
-  }
+    public ApiResponse(Integer code, String message, T data) {
+        this.code = code;
+        this.message = message;
+        this.data = data;
+    }
 
-  public static <T> ApiResponse<T> success(T data) {
-    return new ApiResponse<>(200, "success", data);
-  }
+    public ApiResponse(Integer code, String message, Long total, T data) {
+        this.code = code;
+        this.message = message;
+        this.total = total;
+        this.data = data;
+    }
 
-  public static <T> ApiResponse<T> fail(String message) {
-    return fail(500, message);
-  }
+    // ========== 成功响应 ==========
 
-  public static <T> ApiResponse<T> fail(Integer code, String message) {
-    return new ApiResponse<>(code, message, null);
-  }
+    public static <T> ApiResponse<T> success() {
+        return new ApiResponse<>(200, "success", null);
+    }
 
-  public Integer getCode() {
-    return code;
-  }
+    public static <T> ApiResponse<T> success(T data) {
+        return new ApiResponse<>(200, "success", data);
+    }
 
-  public void setCode(Integer code) {
-    this.code = code;
-  }
+    public static <T> ApiResponse<T> success(String message, T data) {
+        return new ApiResponse<>(200, message, data);
+    }
 
-  public String getMessage() {
-    return message;
-  }
+    public static <T> ApiResponse<T> success(Long total, T data) {
+        return new ApiResponse<>(200, "success", total, data);
+    }
 
-  public void setMessage(String message) {
-    this.message = message;
-  }
+    // ========== 失败响应 ==========
 
-  public T getData() {
-    return data;
-  }
+    public static <T> ApiResponse<T> error(String message) {
+        return new ApiResponse<>(500, message, null);
+    }
 
-  public void setData(T data) {
-    this.data = data;
-  }
+    public static <T> ApiResponse<T> error(Integer code, String message) {
+        return new ApiResponse<>(code, message, null);
+    }
 }

@@ -69,3 +69,9 @@ screenshot*.png
 # OpenClaw / local run scratch
 .claude/
 .codex/
+
+# Office documents (resumes, presentations)
+*.docx
+*.pptx
+~$*.docx
+~$*.pptx

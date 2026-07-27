@@ -1,7 +1,7 @@
 package com.hkstock.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.hkstock.entity.News;
+import com.hkstock.domain.News;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

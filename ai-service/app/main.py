@@ -4,7 +4,7 @@
 """
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import analyze, scraper, config
+from app.routers import analyze, scraper, config, sync
 import subprocess
 import threading
 import os
@@ -29,6 +29,7 @@ app.add_middleware(
 app.include_router(analyze.router, prefix="/api/analyze", tags=["AI分析"])
 app.include_router(scraper.router, prefix="/api/scraper", tags=["数据爬取"])
 app.include_router(config.router, prefix="/api/config", tags=["配置管理"])
+app.include_router(sync.router, tags=["数据同步"])
 
 # K线同步状态
 _kline_sync_status = {"running": False, "progress": "", "last_run": None}

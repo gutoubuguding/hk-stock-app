@@ -89,7 +89,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'
+import request from '@/http/request'
 
 const availableModels = ref({})
 const selectedModel = ref('')
@@ -114,8 +114,8 @@ onMounted(async () => {
 
 const loadModels = async () => {
   try {
-    const res = await axios.get('/api/config/models')
-    availableModels.value = res.data.models || {}
+    const res = await request({ url: '/config/models' })
+    availableModels.value = res.data?.models || {}
   } catch (e) {
     console.error(e)
   }
@@ -123,11 +123,11 @@ const loadModels = async () => {
 
 const loadCurrentConfig = async () => {
   try {
-    const res = await axios.get('/api/config/current')
-    currentConfig.value = res.data
-    provider.value = res.data.ai_provider || res.data.provider || provider.value
-    modelName.value = res.data.ai_model || res.data.model || modelName.value
-    baseUrl.value = res.data.ai_base_url || res.data.base_url || baseUrl.value
+    const res = await request({ url: '/config/current' })
+    currentConfig.value = res.data || {}
+    provider.value = currentConfig.value.ai_provider || currentConfig.value.provider || provider.value
+    modelName.value = currentConfig.value.ai_model || currentConfig.value.model || modelName.value
+    baseUrl.value = currentConfig.value.ai_base_url || currentConfig.value.base_url || baseUrl.value
     selectedModel.value = provider.value
   } catch (e) {
     console.error(e)
@@ -150,11 +150,15 @@ const saveModelConfig = async () => {
   }
   saving.value = true
   try {
-    await axios.post('/api/config/set-model', {
-      provider: provider.value,
-      model: modelName.value,
-      api_key: apiKey.value,
-      base_url: baseUrl.value
+    await request({
+      url: '/config/set-model',
+      method: 'POST',
+      data: {
+        provider: provider.value,
+        model: modelName.value,
+        api_key: apiKey.value,
+        base_url: baseUrl.value
+      }
     })
     ElMessage.success('配置保存成功')
     await loadCurrentConfig()
@@ -176,19 +180,24 @@ const testConnection = async () => {
 
   testing.value = true
   try {
-    const res = await axios.post('/api/config/test-connection', {
-      provider: provider.value,
-      model: modelName.value,
-      api_key: apiKey.value,
-      base_url: baseUrl.value
+    const res = await request({
+      url: '/config/test-connection',
+      method: 'POST',
+      data: {
+        provider: provider.value,
+        model: modelName.value,
+        api_key: apiKey.value,
+        base_url: baseUrl.value
+      }
     })
-    if (res.data.success) {
-      ElMessage.success(res.data.message || '连接成功')
+    const result = res.data || res
+    if (result.success) {
+      ElMessage.success(result.message || '连接成功')
     } else {
-      ElMessage.error(res.data.message || '连接失败')
+      ElMessage.error(result.message || '连接失败')
     }
   } catch (e) {
-    ElMessage.error(e.response?.data?.message || '连接测试失败')
+    ElMessage.error('连接测试失败')
   } finally {
     testing.value = false
   }
@@ -197,17 +206,22 @@ const testConnection = async () => {
 const testFutuConnection = async () => {
   testingFutu.value = true
   try {
-    const res = await axios.post('/api/config/test-futu', {
-      host: futuConfig.host,
-      port: futuConfig.port
+    const res = await request({
+      url: '/config/test-futu',
+      method: 'POST',
+      data: {
+        host: futuConfig.host,
+        port: futuConfig.port
+      }
     })
-    if (res.data.success) {
-      ElMessage.success(res.data.message || 'Futu OpenD 连接成功')
+    const result = res.data || res
+    if (result.success) {
+      ElMessage.success(result.message || 'Futu OpenD 连接成功')
     } else {
-      ElMessage.error(res.data.message || 'Futu OpenD 连接失败')
+      ElMessage.error(result.message || 'Futu OpenD 连接失败')
     }
   } catch (e) {
-    ElMessage.error(e.response?.data?.message || 'Futu 连接测试失败')
+    ElMessage.error('Futu 连接测试失败')
   } finally {
     testingFutu.value = false
   }

@@ -15,7 +15,7 @@ public class IpoSyncTask {
 
   private static final Logger log = LoggerFactory.getLogger(IpoSyncTask.class);
   private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-  private static final String IPO_SCRIPT = "sync_ipo_futu.py";
+  private static final String IPO_SCRIPT = "sync/sync_ipo_futu.py";
 
   private @Autowired PythonScriptRunner pythonScriptRunner;
   private @Autowired CacheInvalidationService cacheInvalidationService;

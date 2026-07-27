@@ -49,7 +49,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'
+import request from '@/http/request'
 
 const router = useRouter()
 const searchKeyword = ref('')
@@ -67,10 +67,8 @@ const handleSearch = () => {
     }
     loading.value = true
     try {
-      const res = await axios.get('/api/stock/search', {
-        params: { keyword: searchKeyword.value }
-      })
-      searchResults.value = res.data
+      const res = await request({ url: '/stock/search', params: { keyword: searchKeyword.value } })
+      searchResults.value = res.data || []
     } catch (e) {
       console.error('搜索失败', e)
     }
@@ -84,10 +82,7 @@ const goToDetail = (row) => {
 
 const addToWatchlist = async (row) => {
   try {
-    await axios.post('/api/watchlist', {
-      stockCode: row.stockCode,
-      stockName: row.stockName
-    })
+    await request({ url: '/watchlist', method: 'POST', data: { stockCode: row.stockCode, stockName: row.stockName } })
     ElMessage.success(`已添加 ${row.stockName} 到自选股`)
   } catch (e) {
     ElMessage.error('添加失败')

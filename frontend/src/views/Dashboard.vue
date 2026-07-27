@@ -97,7 +97,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
+import request from '@/http/request'
 
 const marketData = ref({
   hsi: null,
@@ -132,7 +132,7 @@ const sentimentTone = computed(() => {
 
 onMounted(async () => {
   try {
-    const res = await axios.get('/api/calendar/market-overview')
+    const res = await request({ url: '/calendar/market-overview' })
     if (res.data) {
       marketData.value = { ...marketData.value, ...res.data }
     }

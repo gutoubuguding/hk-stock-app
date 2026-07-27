@@ -17,7 +17,7 @@ public class PriceAlertTask {
 
   @Scheduled(cron = "0 */5 9-16 * * MON-FRI")
   public void checkPriceAlertsIntraday() {
-    int count = priceAlertService.checkAlerts().size();
+    int count = priceAlertService.checkAllAlerts().size();
     if (count > 0) {
       log.info("[Price alert] Triggered {} alert(s) in this check", count);
     }

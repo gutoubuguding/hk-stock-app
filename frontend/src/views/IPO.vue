@@ -37,7 +37,7 @@
       </el-tab-pane>
 
       <!-- 新股对比表格 -->
-      <el-tab-pane label="近一年新股对比" name="comparison">
+      <el-tab-pane label="2025年之后新股对比" name="comparison">
         <div class="table-toolbar">
           <el-select v-model="sortBy" placeholder="排序字段" @change="loadComparison">
             <el-option label="上市时间" value="listingDate" />
@@ -116,7 +116,13 @@
                 </div>
               </el-popover>
             </template>
-            <template #default="{ row }">{{ formatAllotmentRate(row) }}</template>
+            <template #default="{ row }">
+              <a v-if="row.hkexPdfUrl" :href="row.hkexPdfUrl" target="_blank" class="pdf-link" @click.stop>
+                {{ formatAllotmentRate(row) }}
+                <el-icon size="12"><Link /></el-icon>
+              </a>
+              <span v-else>{{ formatAllotmentRate(row) }}</span>
+            </template>
           </el-table-column>
           <el-table-column prop="oversubscriptionRatio" label="超购倍数" width="100" sortable>
             <template #default="{ row }">{{ formatNullable(row.oversubscriptionRatio, 'x') }}</template>
@@ -195,7 +201,7 @@
       <!-- 破发率 -->
       <el-tab-pane label="破发率统计" name="breakRate">
         <div v-if="breakRateData" class="break-rate">
-          <el-statistic title="近一年新股总数" :value="breakRateData.total" />
+          <el-statistic title="2025年后新股总数" :value="breakRateData.total" />
           <el-statistic title="破发数量" :value="breakRateData.brokenCount" />
           <el-statistic title="破发率" :value="breakRateData.breakRate" suffix="%" />
         </div>
@@ -437,7 +443,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import request from '@/http/request'
 
 const router = useRouter()
 
@@ -477,7 +483,7 @@ onMounted(async () => {
   await loadBreakRate()
 })
 
-const unwrapApiResponse = (res) => res.data?.data ?? res.data
+const unwrapApiResponse = (res) => res.data ?? res
 const formatNullable = (value, suffix = '') => value == null || value === '' ? '待公布' : `${value}${suffix}`
 
 const parseAllotmentRateTiers = (tiers) => {
@@ -521,7 +527,7 @@ const sortBySelectedAllotmentRate = (a, b) => {
 const loadUpcoming = async () => {
   loadingUpcoming.value = true
   try {
-    const res = await axios.get('/api/ipo/upcoming')
+    const res = await request({ url: '/ipo/upcoming' })
     upcomingList.value = unwrapApiResponse(res) || []
   } catch (e) { console.error(e) }
   loadingUpcoming.value = false
@@ -530,7 +536,8 @@ const loadUpcoming = async () => {
 const loadComparison = async () => {
   loadingComparison.value = true
   try {
-    const res = await axios.get('/api/ipo/comparison', {
+    const res = await request({
+      url: '/ipo/comparison',
       params: { sortBy: sortBy.value, sortOrder: sortOrder.value }
     })
     comparisonData.value = unwrapApiResponse(res)?.data || []
@@ -540,14 +547,14 @@ const loadComparison = async () => {
 
 const loadSectorStats = async () => {
   try {
-    const res = await axios.get('/api/ipo/sector-stats')
+    const res = await request({ url: '/ipo/sector-stats' })
     sectorStats.value = unwrapApiResponse(res)
   } catch (e) { console.error(e) }
 }
 
 const loadBreakRate = async () => {
   try {
-    const res = await axios.get('/api/ipo/break-rate')
+    const res = await request({ url: '/ipo/break-rate' })
     breakRateData.value = unwrapApiResponse(res)
   } catch (e) { console.error(e) }
 }
@@ -572,7 +579,7 @@ const analyzeIpo = async (row) => {
   ipoAnalysisResult.value = null
   ipoNewsList.value = []
   try {
-    const res = await axios.get(`/api/ipo/ai-analysis/${row.stockCode}`)
+    const res = await request({ url: `/ipo/ai-analysis/${row.stockCode}` })
     const data = unwrapApiResponse(res) || {}
     ipoAnalysisResult.value = data
     ipoNewsList.value = data.news || []
@@ -649,7 +656,7 @@ const onSectorClick = async (row) => {
   sectorDialogVisible.value = true
   sectorIpos.value = []
   try {
-    const res = await axios.get('/api/ipo/sector', { params: { sector: row.sector } })
+    const res = await request({ url: '/ipo/sector', params: { sector: row.sector } })
     sectorIpos.value = unwrapApiResponse(res)?.ipos || []
   } catch (e) {
     console.error('加载板块公司失败:', e)
@@ -742,6 +749,19 @@ const onSectorClick = async (row) => {
 .down { color: #67c23a; }
 .warn { color: #e6a23c; }
 .empty-cell { color: #c0c4cc; }
+
+.pdf-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--primary);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pdf-link:hover {
+  text-decoration: underline;
+}
 
 .sector-summary {
   display: flex;

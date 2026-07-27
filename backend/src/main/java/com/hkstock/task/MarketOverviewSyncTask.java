@@ -16,7 +16,7 @@ public class MarketOverviewSyncTask {
 
   private static final Logger log = LoggerFactory.getLogger(MarketOverviewSyncTask.class);
   private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-  private static final String MARKET_OVERVIEW_SCRIPT = "sync_market_overview.py";
+  private static final String MARKET_OVERVIEW_SCRIPT = "sync/sync_market_overview.py";
 
   private @Autowired PythonScriptRunner pythonScriptRunner;
   private @Autowired StockService stockService;

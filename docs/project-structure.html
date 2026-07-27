@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>港股智能分析平台 - 项目结构</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #1a1a2e; font-family: 'Microsoft YaHei', sans-serif; padding: 40px; min-height: 100vh; }
+.container { max-width: 1100px; margin: 0 auto; }
+h1 { color: #fff; text-align: center; font-size: 28px; margin-bottom: 30px; }
+h1 span { color: #1890ff; }
+.tree { background: #2a2a4a; border-radius: 16px; padding: 30px 40px; }
+.folder { margin: 4px 0; }
+.folder-name { color: #4ecdc4; font-weight: bold; font-size: 15px; }
+.folder-desc { color: #7a7a7a; font-size: 13px; margin-left: 8px; }
+.file { color: #ccc; font-size: 13px; margin: 2px 0; }
+.file-desc { color: #666; font-size: 12px; margin-left: 8px; }
+.indent-1 { padding-left: 24px; }
+.indent-2 { padding-left: 48px; }
+.indent-3 { padding-left: 72px; }
+.separator { border-bottom: 1px solid #3a3a5a; margin: 8px 0; }
+.highlight { color: #1890ff; font-weight: bold; }
+.tag { display: inline-block; background: #1890ff22; color: #1890ff; padding: 1px 6px; border-radius: 4px; font-size: 11px; margin-left: 6px; }
+.tag-green { background: #52c41a22; color: #52c41a; }
+.tag-orange { background: #f39c1222; color: #f39c12; }
+.tag-purple { background: #9b59b622; color: #9b59b6; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>港股智能分析平台 — <span>项目结构</span></h1>
+<div class="tree">
+
+<div class="folder"><span class="folder-name">📁 hk-stock-app/</span></div>
+
+<div class="folder indent-1"><span class="folder-name">📁 backend/</span><span class="tag">Spring Boot</span></div>
+<div class="file indent-2">📄 pom.xml <span class="file-desc">Maven配置</span></div>
+<div class="folder indent-2"><span class="folder-name">📁 src/main/java/com/hkstock/</span></div>
+<div class="file indent-3">📄 HkStockApplication.java <span class="file-desc">启动类</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 common/</span> <span class="file-desc">ApiResponse统一响应</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 config/</span> <span class="file-desc">Knife4j/缓存/跨域配置</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 controller/</span> <span class="file-desc">9个REST控制器</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 domain/</span> <span class="file-desc">8个实体类</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 dto/</span> <span class="file-desc">数据传输对象</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 vo/</span> <span class="file-desc">视图对象</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 mapper/</span> <span class="file-desc">MyBatis-Plus数据访问</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 service/</span> <span class="file-desc">业务接口+实现</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 interceptor/</span> <span class="file-desc">JWT Token拦截器</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 task/</span> <span class="file-desc">6个定时同步任务</span></div>
+
+<div class="separator"></div>
+
+<div class="folder indent-1"><span class="folder-name">📁 frontend/</span><span class="tag-green">Vue 3</span></div>
+<div class="file indent-2">📄 package.json <span class="file-desc">npm配置</span></div>
+<div class="folder indent-2"><span class="folder-name">📁 src/</span></div>
+<div class="file indent-3">📄 App.vue <span class="file-desc">根组件（导航栏）</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 views/</span> <span class="file-desc">10个页面组件</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 router/</span> <span class="file-desc">路由+登录守卫</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 stores/</span> <span class="file-desc">Pinia状态管理</span></div>
+<div class="folder indent-3"><span class="folder-name">📁 http/</span> <span class="file-desc">Axios封装（自动token）</span></div>
+
+<div class="separator"></div>
+
+<div class="folder indent-1"><span class="folder-name">📁 ai-service/</span><span class="tag-orange">FastAPI</span></div>
+<div class="file indent-2">📄 requirements.txt <span class="file-desc">Python依赖</span></div>
+<div class="folder indent-2"><span class="folder-name">📁 app/routers/</span></div>
+<div class="file indent-3">📄 analyze.py <span class="file-desc">AI分析（新闻/新股/对话）</span></div>
+<div class="file indent-3">📄 config.py <span class="file-desc">AI模型配置</span></div>
+<div class="file indent-3">📄 sync.py <span class="file-desc">Futu数据同步</span></div>
+
+<div class="separator"></div>
+
+<div class="folder indent-1"><span class="folder-name">📁 scripts/</span><span class="tag-purple">数据同步</span></div>
+<div class="folder indent-2"><span class="folder-name">📁 sync/</span> <span class="file-desc">35个同步脚本</span></div>
+<div class="folder indent-2"><span class="folder-name">📁 scrapers/</span> <span class="file-desc">15个爬虫脚本</span></div>
+<div class="folder indent-2"><span class="folder-name">📁 utils/</span> <span class="file-desc">工具脚本</span></div>
+
+<div class="separator"></div>
+
+<div class="folder indent-1"><span class="folder-name">📁 docker/</span> <span class="file-desc">PostgreSQL初始化SQL</span></div>
+<div class="file indent-1">📄 docker-compose.yml <span class="file-desc">一键启动4个容器</span></div>
+<div class="file indent-1">📄 .env <span class="file-desc">环境变量配置</span></div>
+<div class="file indent-1">📄 README.md <span class="file-desc">项目说明文档</span></div>
+
+</div>
+</div>
+</body>
+</html>

@@ -5,11 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.hkstock.entity.StockInfo;
+import com.hkstock.domain.StockInfo;
 import com.hkstock.exception.BusinessException;
 import com.hkstock.mapper.StockInfoMapper;
 import com.hkstock.mapper.StockKlineMapper;
 import com.hkstock.mapper.StockValuationMapper;
+import com.hkstock.service.impl.StockServiceImpl;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,39 +22,37 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 class StockSearchServiceTest {
 
-  @Mock private StockInfoMapper stockInfoMapper;
+    @Mock private StockInfoMapper stockInfoMapper;
+    @Mock private StockKlineMapper stockKlineMapper;
+    @Mock private StockValuationMapper valuationMapper;
 
-  @Mock private StockKlineMapper stockKlineMapper;
+    private StockServiceImpl stockService;
 
-  @Mock private StockValuationMapper valuationMapper;
+    @BeforeEach
+    void setUp() {
+        stockService = new StockServiceImpl();
+        ReflectionTestUtils.setField(stockService, "stockInfoMapper", stockInfoMapper);
+        ReflectionTestUtils.setField(stockService, "stockKlineMapper", stockKlineMapper);
+        ReflectionTestUtils.setField(stockService, "valuationMapper", valuationMapper);
+    }
 
-  private StockService stockService;
+    @Test
+    void searchStocksReturnsMapperResult() {
+        StockInfo tencent = new StockInfo();
+        tencent.setStockCode("00700");
+        tencent.setStockName("腾讯控股");
+        when(stockInfoMapper.selectList(any())).thenReturn(List.of(tencent));
 
-  @BeforeEach
-  void setUp() {
-    stockService = new StockService();
-    ReflectionTestUtils.setField(stockService, "stockInfoMapper", stockInfoMapper);
-    ReflectionTestUtils.setField(stockService, "stockKlineMapper", stockKlineMapper);
-    ReflectionTestUtils.setField(stockService, "valuationMapper", valuationMapper);
-  }
+        List<StockInfo> result = stockService.searchStocks("腾讯");
 
-  @Test
-  void searchStocksReturnsMapperResult() {
-    StockInfo tencent = new StockInfo();
-    tencent.setStockCode("00700");
-    tencent.setStockName("腾讯控股");
-    when(stockInfoMapper.selectList(any())).thenReturn(List.of(tencent));
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getStockCode()).isEqualTo("00700");
+    }
 
-    List<StockInfo> result = stockService.searchStocks("腾讯");
-
-    assertThat(result).hasSize(1);
-    assertThat(result.get(0).getStockCode()).isEqualTo("00700");
-  }
-
-  @Test
-  void getLatestDailyInfoRejectsIllegalStockCode() {
-    assertThatThrownBy(() -> stockService.getLatestDailyInfo("00700;drop table"))
-        .isInstanceOf(BusinessException.class)
-        .hasMessageContaining("股票代码格式不正确");
-  }
+    @Test
+    void getLatestDailyInfoRejectsIllegalStockCode() {
+        assertThatThrownBy(() -> stockService.getLatestDailyInfo("00700;drop table"))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("股票代码格式不正确");
+    }
 }

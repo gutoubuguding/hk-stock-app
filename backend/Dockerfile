@@ -13,7 +13,7 @@ WORKDIR /app
 # The Spring scheduler calls Python sync scripts. Keep Python inside the
 # backend image so `docker compose up -d` works without host Python.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 python3-pip \
+    && apt-get install -y --no-install-recommends python3 python3-pip python3-venv \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3 /usr/local/bin/python
 
@@ -21,7 +21,7 @@ COPY requirements-sync.txt /app/scripts/requirements-sync.txt
 RUN pip3 install --no-cache-dir -r /app/scripts/requirements-sync.txt
 
 COPY --from=build /build/target/*.jar /app/app.jar
-COPY sync_daily_kline.py sync_ipo_futu.py sync_market_overview.py sync_calendar_aastocks.py sync_ipo_detail_aastocks.py sync_ipo_kline_metrics.py update_ipo_metrics.py /app/scripts/
+COPY scripts/sync/ /app/scripts/sync/
 
 ENV SERVER_PORT=8080 \
     SERVER_ADDRESS=0.0.0.0 \

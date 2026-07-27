@@ -14,7 +14,7 @@ public class CalendarSyncTask {
 
   private static final Logger log = LoggerFactory.getLogger(CalendarSyncTask.class);
   private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-  private static final String CALENDAR_SCRIPT = "sync_calendar_aastocks.py";
+  private static final String CALENDAR_SCRIPT = "sync/sync_calendar_aastocks.py";
 
   private @Autowired PythonScriptRunner pythonScriptRunner;
 

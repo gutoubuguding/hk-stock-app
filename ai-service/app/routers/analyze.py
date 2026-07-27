@@ -131,6 +131,19 @@ def parse_structured_json(raw: str) -> Dict[str, Any]:
     if not isinstance(data, dict):
         return fallback
 
+    # 如果 summary 字段本身也是 JSON，尝试解析它
+    summary = data.get("summary", "")
+    if isinstance(summary, str) and summary.strip().startswith("{"):
+        try:
+            nested = json.loads(summary)
+            if isinstance(nested, dict):
+                # 嵌套JSON是完整对象，直接用它替换整个data
+                has_real_fields = any(k in nested for k in ["summary", "riskLevel", "advantages", "risks", "suggestion"])
+                if has_real_fields:
+                    data = nested
+        except Exception:
+            pass
+
     def as_list(value):
         if isinstance(value, list):
             return [str(item) for item in value if str(item).strip()]
@@ -207,7 +220,10 @@ def fetch_stock_news(stock_name: str, stock_code: str = "", days: int = 7) -> li
     # 构建精确搜索关键词：优先用"股票代码 + 股票简称"组合
     # 股票代码是唯一标识，比公司名更可靠
     search_keyword = stock_name if stock_name else stock_code
-    search_code = stock_code.strip("HK").strip("hk") if stock_code else ""
+    # 去掉 HK. 前缀
+    search_code = stock_code
+    if search_code:
+        search_code = search_code.replace("HK.", "").replace("hk.", "").replace("HK", "").replace("hk", "").strip()
     
     try:
         # 方案1: Google News RSS - 支持按关键词精准搜索，可信度高
@@ -607,8 +623,8 @@ def analyze_stock_news(
 注意：分析要具体、有依据，不要泛泛而谈。
 """
 
-    # 3. 调用LLM分析
-    analysis = call_llm(prompt, api_key, base_url, model)
+    # 3. 调用LLM分析（新闻分析需要更多token）
+    analysis = call_llm(prompt, api_key, base_url, model, max_tokens=3000)
 
     return {
         "stock_code": stock_code,

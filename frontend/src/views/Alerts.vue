@@ -11,11 +11,25 @@
         <span>添加预警</span>
       </template>
       <el-form :model="form" inline>
-        <el-form-item label="股票代码">
-          <el-input v-model="form.stockCode" placeholder="如：00700" />
-        </el-form-item>
-        <el-form-item label="股票名称">
-          <el-input v-model="form.stockName" placeholder="如：腾讯控股" />
+        <el-form-item label="股票搜索">
+          <el-select
+            v-model="selectedStock"
+            filterable
+            remote
+            reserve-keyword
+            placeholder="输入股票代码或名称搜索"
+            :remote-method="searchStocks"
+            :loading="searchLoading"
+            @change="onStockSelect"
+            style="width: 250px"
+          >
+            <el-option
+              v-for="item in stockOptions"
+              :key="item.stockCode"
+              :label="`${item.stockCode} ${item.stockName}`"
+              :value="item.stockCode"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="预警类型">
           <el-select v-model="form.alertType">
@@ -57,17 +71,50 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
-import axios from 'axios'
+import request from '@/http/request'
 
 const alerts = ref([])
 const loading = ref(false)
 const checking = ref(false)
+let isLoading = false
 const form = reactive({
   stockCode: '',
   stockName: '',
   alertType: 'ABOVE',
   targetPrice: null
 })
+
+// 股票搜索相关
+const selectedStock = ref(null)
+const stockOptions = ref([])
+const searchLoading = ref(false)
+
+let searchTimer = null
+const searchStocks = (keyword) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  if (!keyword || keyword.trim().length < 1) {
+    stockOptions.value = []
+    return
+  }
+  searchLoading.value = true
+  searchTimer = setTimeout(async () => {
+    try {
+      const res = await request({ url: '/stock/search', params: { keyword: keyword.trim() } })
+      stockOptions.value = (res.data || []).slice(0, 20)
+    } catch (e) {
+      console.error(e)
+    }
+    searchLoading.value = false
+  }, 300)
+}
+
+const onStockSelect = (stockCode) => {
+  const stock = stockOptions.value.find(s => s.stockCode === stockCode)
+  if (stock) {
+    form.stockCode = stock.stockCode
+    form.stockName = stock.stockName
+  }
+}
 
 onMounted(async () => {
   await loadAlerts()
@@ -76,12 +123,16 @@ onMounted(async () => {
 })
 
 const loadAlerts = async () => {
+  if (isLoading) return
+  isLoading = true
   loading.value = true
   try {
-    const res = await axios.get('/api/alert')
-    alerts.value = res.data
-  } catch (e) { console.error(e) }
-  loading.value = false
+    const res = await request({ url: '/alert' })
+    alerts.value = res.data || []
+  } catch (e) { console.error(e) } finally {
+    loading.value = false
+    isLoading = false
+  }
 }
 
 const addAlert = async () => {
@@ -90,7 +141,7 @@ const addAlert = async () => {
     return
   }
   try {
-    await axios.post('/api/alert', { ...form })
+    await request({ url: '/alert', method: 'POST', data: { ...form } })
     ElMessage.success('预警添加成功')
     form.stockCode = ''
     form.stockName = ''
@@ -104,7 +155,7 @@ const addAlert = async () => {
 const checkAlerts = async (showEmpty = true) => {
   checking.value = true
   try {
-    const res = await axios.post('/api/alert/check')
+    const res = await request({ url: '/alert/check', method: 'POST' })
     const triggered = res.data || []
     if (triggered.length > 0) {
       triggered.forEach(item => {
@@ -129,7 +180,7 @@ const checkAlerts = async (showEmpty = true) => {
 
 const deleteAlert = async (id) => {
   try {
-    await axios.delete(`/api/alert/${id}`)
+    await request({ url: `/alert/${id}`, method: 'DELETE' })
     ElMessage.success('已删除')
     await loadAlerts()
   } catch (e) {

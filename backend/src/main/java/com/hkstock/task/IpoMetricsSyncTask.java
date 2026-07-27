@@ -15,7 +15,7 @@ public class IpoMetricsSyncTask {
 
   private static final Logger log = LoggerFactory.getLogger(IpoMetricsSyncTask.class);
   private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-  private static final String IPO_METRICS_SCRIPT = "sync_ipo_kline_metrics.py";
+  private static final String IPO_METRICS_SCRIPT = "sync/sync_ipo_kline_metrics.py";
 
   private @Autowired PythonScriptRunner pythonScriptRunner;
   private @Autowired CacheInvalidationService cacheInvalidationService;

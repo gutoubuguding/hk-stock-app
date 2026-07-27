@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.hkstock.exception.AiServiceException;
 import com.hkstock.exception.BusinessException;
 import com.hkstock.mapper.StockIpoMapper;
+import com.hkstock.service.impl.IpoServiceImpl;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,45 +22,43 @@ import org.springframework.web.client.RestTemplate;
 @ExtendWith(MockitoExtension.class)
 class AiAnalysisServiceTest {
 
-  @Mock private StockIpoMapper ipoMapper;
+    @Mock private StockIpoMapper ipoMapper;
+    @Mock private RestTemplate restTemplate;
+    @Mock private ConfigService configService;
 
-  @Mock private RestTemplate restTemplate;
+    private IpoServiceImpl ipoService;
 
-  @Mock private ConfigService configService;
+    @BeforeEach
+    void setUp() {
+        ipoService = new IpoServiceImpl();
+        ReflectionTestUtils.setField(ipoService, "ipoMapper", ipoMapper);
+        ReflectionTestUtils.setField(ipoService, "restTemplate", restTemplate);
+        ReflectionTestUtils.setField(ipoService, "configService", configService);
+        ReflectionTestUtils.setField(ipoService, "aiServiceUrl", "http://ai-service:8082");
+    }
 
-  private IpoService ipoService;
+    @Test
+    void getAiAnalysisReturnsFriendlyErrorWhenAiServiceTimeouts() {
+        when(ipoMapper.selectOne(any())).thenReturn(null);
+        when(configService.getRequiredAiConfig())
+            .thenReturn(
+                Map.of(
+                    "ai_api_key", "test-key",
+                    "ai_base_url", "http://llm.example",
+                    "ai_model", "test-model"));
+        when(restTemplate.getForObject(
+                any(String.class), eq(Map.class), any(), any(), any(), any(), any()))
+            .thenThrow(new ResourceAccessException("Read timed out"));
 
-  @BeforeEach
-  void setUp() {
-    ipoService = new IpoService();
-    ReflectionTestUtils.setField(ipoService, "ipoMapper", ipoMapper);
-    ReflectionTestUtils.setField(ipoService, "restTemplate", restTemplate);
-    ReflectionTestUtils.setField(ipoService, "configService", configService);
-    ReflectionTestUtils.setField(ipoService, "aiServiceUrl", "http://ai-service:8082");
-  }
+        assertThatThrownBy(() -> ipoService.getAiAnalysis("00700"))
+            .isInstanceOf(AiServiceException.class)
+            .hasMessageContaining("AI 服务暂时不可用，请稍后再试");
+    }
 
-  @Test
-  void getAiAnalysisReturnsFriendlyErrorWhenAiServiceTimeouts() {
-    when(ipoMapper.selectOne(any())).thenReturn(null);
-    when(configService.getRequiredAiConfig())
-        .thenReturn(
-            Map.of(
-                "ai_api_key", "test-key",
-                "ai_base_url", "http://llm.example",
-                "ai_model", "test-model"));
-    when(restTemplate.getForObject(
-            any(String.class), eq(Map.class), any(), any(), any(), any(), any()))
-        .thenThrow(new ResourceAccessException("Read timed out"));
-
-    assertThatThrownBy(() -> ipoService.getAiAnalysis("00700"))
-        .isInstanceOf(AiServiceException.class)
-        .hasMessageContaining("AI 服务暂时不可用，请稍后再试");
-  }
-
-  @Test
-  void getAiAnalysisRejectsIllegalStockCode() {
-    assertThatThrownBy(() -> ipoService.getAiAnalysis("bad-code"))
-        .isInstanceOf(BusinessException.class)
-        .hasMessageContaining("股票代码格式不正确");
-  }
+    @Test
+    void getAiAnalysisRejectsIllegalStockCode() {
+        assertThatThrownBy(() -> ipoService.getAiAnalysis("bad-code"))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("股票代码格式不正确");
+    }
 }

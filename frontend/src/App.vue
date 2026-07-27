@@ -44,6 +44,25 @@
           <span>设置</span>
         </el-menu-item>
       </el-menu>
+
+      <!-- 用户信息和退出登录 -->
+      <div class="user-section" v-if="userInfo.username">
+        <el-dropdown @command="handleCommand">
+          <span class="user-info">
+            <el-icon><User /></el-icon>
+            {{ userInfo.nickname || userInfo.username }}
+            <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="logout">
+                <el-icon><SwitchButton /></el-icon>
+                退出登录
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </div>
     </el-header>
 
     <!-- 主内容区 -->
@@ -54,11 +73,33 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
 const route = useRoute()
+const router = useRouter()
 const currentRoute = computed(() => route.path)
+
+const userInfo = ref({})
+
+onMounted(() => {
+  const stored = sessionStorage.getItem('userInfo')
+  if (stored) {
+    try {
+      userInfo.value = JSON.parse(stored)
+    } catch (e) {}
+  }
+})
+
+const handleCommand = (command) => {
+  if (command === 'logout') {
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('userInfo')
+    ElMessage.success('已退出登录')
+    router.replace('/login')
+  }
+}
 </script>
 
 <style>
@@ -255,6 +296,27 @@ body {
 .up { color: var(--red) !important; }
 .down { color: var(--green) !important; }
 .warn { color: #e6a23c !important; }
+
+.user-section {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-main);
+}
+
+.user-info:hover {
+  background: var(--primary-soft);
+}
 
 @media (max-width: 980px) {
   .app-header {

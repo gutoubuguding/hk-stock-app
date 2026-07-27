@@ -1,7 +1,7 @@
 package com.hkstock.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.hkstock.entity.PriceAlert;
+import com.hkstock.domain.PriceAlert;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper

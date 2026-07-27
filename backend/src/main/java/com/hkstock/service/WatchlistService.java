@@ -1,32 +1,17 @@
 package com.hkstock.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.hkstock.entity.Watchlist;
-import com.hkstock.mapper.WatchlistMapper;
+import com.hkstock.domain.Watchlist;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-/** 自选股服务 */
-@Service
-public class WatchlistService {
-  private static final Logger log = LoggerFactory.getLogger(WatchlistService.class);
+/** 自选股服务接口 */
+public interface WatchlistService {
 
-  private @Autowired WatchlistMapper watchlistMapper;
+    /** 获取自选股列表 */
+    List<Watchlist> getWatchlist(Long userId);
 
-  public List<Watchlist> getWatchlist() {
-    return watchlistMapper.selectList(
-        new LambdaQueryWrapper<Watchlist>().orderByAsc(Watchlist::getSortOrder));
-  }
+    /** 添加自选股 */
+    void addToWatchlist(Long userId, String stockCode, String stockName);
 
-  public void addToWatchlist(Watchlist watchlist) {
-    watchlistMapper.insert(watchlist);
-  }
-
-  public void removeFromWatchlist(String stockCode) {
-    watchlistMapper.delete(
-        new LambdaQueryWrapper<Watchlist>().eq(Watchlist::getStockCode, stockCode));
-  }
+    /** 删除自选股 */
+    void removeFromWatchlist(Long userId, String stockCode);
 }

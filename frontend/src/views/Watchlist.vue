@@ -47,7 +47,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'
+import request from '@/http/request'
 
 const router = useRouter()
 const watchlist = ref([])
@@ -55,15 +55,19 @@ const loading = ref(true)
 
 onMounted(loadWatchlist)
 
+let isLoading = false
+
 async function loadWatchlist() {
+  if (isLoading) return
+  isLoading = true
   loading.value = true
   try {
-    const res = await axios.get('/api/watchlist')
+    const res = await request({ url: '/watchlist' })
     const rows = res.data || []
     watchlist.value = await Promise.all(rows.map(async row => {
       const [daily, valuation] = await Promise.all([
-        axios.get('/api/stock/daily-info', { params: { stockCode: row.stockCode } }).then(r => r.data).catch(() => null),
-        axios.get('/api/stock/valuation', { params: { stockCode: row.stockCode } }).then(r => r.data).catch(() => null)
+        request({ url: '/stock/daily-info', params: { stockCode: row.stockCode } }).then(r => r.data).catch(() => null),
+        request({ url: '/stock/valuation', params: { stockCode: row.stockCode } }).then(r => r.data).catch(() => null)
       ])
       return {
         ...row,
@@ -81,6 +85,7 @@ async function loadWatchlist() {
     ElMessage.error('自选股加载失败')
   } finally {
     loading.value = false
+    isLoading = false
   }
 }
 
@@ -90,7 +95,7 @@ const goToDetail = (code) => {
 
 const removeStock = async (code) => {
   try {
-    await axios.delete(`/api/watchlist/${code}`)
+    await request({ url: `/watchlist/${code}`, method: 'DELETE' })
     ElMessage.success('已删除')
     await loadWatchlist()
   } catch (e) {
