@@ -88,7 +88,7 @@ def normalize_code(stock_code):
     return str(stock_code or '').strip().replace('.HK', '').zfill(5)
 
 
-def fetch_hkex_allotment_announcements(days=370):
+def fetch_hkex_allotment_announcements(days=550):
     """批量读取 HKEXnews Title Search 的 Allotment Results。
 
     AASTOCKS 详情页的小表只给“最近几只”的中签率/超购倍数；HKEXnews 的
@@ -400,6 +400,7 @@ def main():
               OR public_offering_ratio IS NULL OR international_placement_ratio IS NULL
               OR oversubscription_ratio IS NULL OR allotment_rate IS NULL OR allotment_rate_tiers IS NULL
               OR fundraising_amount IS NULL
+              OR hkex_pdf_url IS NULL
           )
         ORDER BY listing_date DESC
     """)
